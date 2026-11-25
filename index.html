@@ -1,0 +1,1338 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#141B3C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mesure, apprendre Power BI sur un vrai dossier</title>
+<meta name="description" content="Mesure : apprendre Power BI en travaillant sur un vrai dossier. Leçon 1 jouable : ton premier visuel.">
+<link rel="preload" href="fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23141B3C%27/%3E%3Cpath d=%27M7 22v-6M12 22v-3M17 22v-10M22 22v-3M27 22v-6%27 stroke=%27%23F2C811%27 stroke-width=%272.4%27 transform=%27translate(-1 0)%27/%3E%3C/svg%3E">
+<style>
+@font-face{
+  font-family:"Bricolage Grotesque";
+  src:url("fonts/bricolage-grotesque.woff2") format("woff2");
+  font-weight:200 800; font-stretch:75% 100%; font-display:block;
+}
+:root{
+  --nuit:#141B3C; --nuit-2:#1D2652; --nuit-3:#2C3668;
+  --craie:#F4F5FA; --gris:#6B7190; --ligne:#E3E6F0;
+  --jaune:#F2C811; --jaune-2:#FFE98F;
+  --violet:#6A4DF4; --violet-2:#ECE8FF;
+  --orange:#EE7A3A;
+  --alerte:#E5484D;
+  --f-bg:#F3F2F1; --f-line:#E1DFDD; --f-mid:#605E5C; --f-ink:#252423; --f-blue:#118DFF;
+  --ease:cubic-bezier(.22,.8,.24,1);
+  --sat:54px; --sab:10px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%; margin:0}
+body{
+  background:#090D20; color:var(--nuit);
+  font-family:"Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size:15px; font-weight:450; line-height:1.4;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation; overflow:hidden;
+}
+button{font:inherit; color:inherit; background:none; border:0; padding:0; margin:0; cursor:pointer; touch-action:manipulation; text-align:inherit}
+button:focus-visible{outline:2px solid var(--jaune); outline-offset:2px}
+h1,h2,h3,p,ol,ul{margin:0; padding:0}
+ol,ul{list-style:none}
+svg{display:block}
+
+/* ───────── Cadre ───────── */
+.stage{height:100%; display:grid; place-items:center; overflow:auto}
+.phone{width:410px; height:864px; padding:10px; border-radius:58px; background:#03050C;
+  box-shadow:inset 0 0 0 1.5px #2A2F4D, 0 30px 80px rgba(0,0,0,.55); transform-origin:0 0}
+.screen{width:390px; height:844px; border-radius:48px; position:relative; overflow:hidden; background:var(--nuit)}
+.statusbar{position:absolute; inset:0 0 auto 0; height:54px; z-index:60; pointer-events:none; color:#fff;
+  display:flex; justify-content:space-between; align-items:center; padding:6px 30px 0 38px; font-weight:650; font-size:15.5px; font-variant-numeric:tabular-nums}
+.statusbar .island{position:absolute; left:50%; top:11px; width:118px; height:34px; margin-left:-59px; border-radius:20px; background:#000}
+.statusbar .sb-r{display:flex; gap:6px; align-items:center}
+
+@media (max-width:480px){
+  :root{--sat:max(env(safe-area-inset-top, 0px), 8px); --sab:env(safe-area-inset-bottom, 0px)}
+  body{background:var(--nuit)}
+  .stage{display:block; overflow:auto}
+  .phone-wrap{width:100% !important; height:100% !important}
+  .phone{width:100%; height:100dvh; min-height:600px; padding:0; border-radius:0; box-shadow:none; transform:none !important}
+  .screen{width:100%; height:100%; border-radius:0}
+  .statusbar{display:none}
+}
+
+/* ───────── Vues ───────── */
+.view{position:absolute; inset:0; display:flex; flex-direction:column; padding-top:var(--sat)}
+.tabview{opacity:0; visibility:hidden; transition:opacity .22s ease, visibility 0s .22s}
+.tabview.is-on{opacity:1; visibility:visible; transition:opacity .22s ease}
+.scroll{flex:1; overflow-y:auto; padding:4px 20px 120px; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+.h-top{display:flex; justify-content:space-between; align-items:center; height:44px; color:#fff}
+.wordmark{font-weight:800; font-size:21px; font-stretch:88%; letter-spacing:-.01em; position:relative; padding-bottom:7px}
+.wordmark i{position:absolute; left:1px; right:1px; bottom:0; height:6px;
+  background:
+    repeating-linear-gradient(90deg, var(--jaune) 0 1.5px, transparent 1.5px 33px) 0 0/100% 6px no-repeat,
+    repeating-linear-gradient(90deg, var(--jaune) 0 1.5px, transparent 1.5px 6.6px) 0 100%/100% 3px no-repeat}
+.h-count{font-size:13px; color:rgba(255,255,255,.7); font-variant-numeric:tabular-nums}
+.h-count b{color:#fff; font-weight:700}
+.h-title{font-size:40px; line-height:1; font-weight:800; font-stretch:78%; letter-spacing:-.015em; color:#fff; margin:22px 0 12px; text-wrap:balance}
+.h-lede{color:rgba(255,255,255,.74); font-size:15px; line-height:1.45; margin-bottom:22px; max-width:33ch}
+
+/* La feuille du rapport */
+.rsheet{background:#fff; border-radius:16px; padding:14px; box-shadow:0 26px 50px -14px rgba(0,0,0,.55)}
+.rsheet-h{display:flex; align-items:center; gap:8px; padding:0 2px 12px; font-size:13px; color:var(--gris)}
+.rsheet-h b{color:var(--nuit); font-weight:700; margin-right:auto}
+.rgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.tile{border-radius:11px; padding:12px; position:relative; min-height:98px; display:flex; flex-direction:column; align-items:flex-start}
+.tile.wide{grid-column:1/-1}
+.tile.locked{border:1.5px dashed #C5CAD9; color:#7A809B; transition:transform .15s ease}
+.tile.locked:active{transform:scale(.98)}
+.tile.locked b{font-size:14px; font-weight:650; color:#454B6B; line-height:1.2; display:block}
+.tile.locked small{font-size:12.5px; display:block; margin-top:2px}
+.t-n{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:700; background:#E9EBF3; color:#454B6B; margin-bottom:8px; flex:none}
+.t-glyph{position:absolute; right:10px; top:11px; width:20px; height:20px; color:#B4B9CC}
+.tile.wide.locked{min-height:86px}
+
+#tile-1{padding:0; align-items:stretch; transition:background-color .4s, border-color .4s; border:1.5px solid var(--nuit); background:var(--craie)}
+#tile-1.done{border:1px solid var(--f-line); background:#fff}
+#tile-1 .t-todo, #tile-1 .t-done{padding:13px}
+#tile-1.done .t-todo, #tile-1.todo .t-done{display:none}
+.t-head{display:grid; grid-template-columns:1fr 92px; gap:10px; align-items:end}
+.t-head .t-n{background:var(--nuit); color:#fff}
+.t-head h2{font-size:19px; font-weight:750; font-stretch:90%; line-height:1.1; letter-spacing:-.005em}
+.t-head p{font-size:13.5px; color:#4D5373; line-height:1.35; margin-top:4px}
+.t-ghost{height:74px; display:flex; align-items:flex-end; gap:6px; border-bottom:1.5px solid #B9BED0; padding:0 2px}
+.t-ghost i{flex:1; border:1.5px dashed #B9BED0; border-bottom:0}
+.cta{display:block; width:100%; margin-top:14px; height:50px; border-radius:14px; background:var(--jaune); color:var(--nuit); font-weight:750; font-size:16px; text-align:center; transition:transform .15s ease, filter .15s}
+.cta:active{transform:scale(.98); filter:brightness(.95)}
+.t-cap{font-size:12px; font-weight:650; color:var(--f-ink)}
+.t-chart{margin-top:6px}
+.mini-legend{display:flex; flex-wrap:wrap; gap:3px 12px; font-size:11.5px; color:var(--f-mid); margin:5px 0 2px}
+.mini-legend span{display:flex; align-items:center; gap:5px; white-space:nowrap}
+.mini-legend i{width:8px; height:8px; border-radius:50%}
+.t-foot{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:12.5px; color:var(--gris)}
+.link{font-weight:650; color:var(--nuit); text-decoration:underline; text-underline-offset:3px; padding:6px 0}
+@keyframes pose{0%{transform:scale(1.07) translateY(-10px); box-shadow:0 30px 40px -10px rgba(20,27,60,.4); opacity:0} 30%{opacity:1} 100%{transform:none; box-shadow:0 0 0 rgba(20,27,60,0)}}
+#tile-1.pose{animation:pose .9s var(--ease) both; animation-delay:.25s}
+
+/* Mémo */
+.m-title{font-size:34px; line-height:1.02; font-weight:800; font-stretch:78%; color:#fff; margin:22px 0 10px}
+.mgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:22px}
+.fiche-slot{border-radius:14px; min-height:132px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; border:1.5px dashed rgba(255,255,255,.22); color:rgba(255,255,255,.5); font-size:13px}
+.fiche-slot .t-n{background:rgba(255,255,255,.12); color:rgba(255,255,255,.7); margin:0}
+.fiche-slot b{display:block; color:rgba(255,255,255,.82); font-weight:650; font-size:14.5px; line-height:1.2}
+.fiche-slot.open{background:#fff; border:0; color:var(--gris); transition:transform .15s ease}
+.fiche-slot.open:active{transform:scale(.98)}
+.fiche-slot.open b{color:var(--nuit)}
+.fiche-slot.open .t-n{background:var(--nuit); color:#fff}
+.fiche-slot svg.lock{width:18px; height:18px}
+.fiche-slot .fs-top{display:flex; justify-content:space-between; width:100%; align-items:center}
+
+.tabbar{position:absolute; left:0; right:0; bottom:0; z-index:10; display:flex; justify-content:center; padding:26px 16px calc(12px + var(--sab));
+  background:linear-gradient(to top, var(--nuit) 55%, rgba(20,27,60,0)); pointer-events:none; transition:opacity .25s}
+.tabs{pointer-events:auto; display:flex; gap:4px; padding:4px; border-radius:99px; background:var(--nuit-3); box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.tab{height:44px; padding:0 20px 0 16px; border-radius:99px; display:flex; align-items:center; gap:8px; color:rgba(255,255,255,.75); font-weight:650; font-size:14px; transition:background-color .2s, color .2s}
+.tab svg{width:19px; height:19px}
+.tab.is-on{background:#fff; color:var(--nuit)}
+
+/* ───────── Leçon ───────── */
+.lesson{background:var(--nuit); z-index:20; transform:translateY(102%); visibility:hidden; transition:transform .5s var(--ease), visibility 0s .5s}
+.lesson.is-open{transform:none; visibility:visible; transition:transform .5s var(--ease)}
+.l-top{display:grid; grid-template-columns:40px 1fr auto; align-items:center; gap:4px; padding:0 14px 0 6px; height:46px; color:#fff; flex:none}
+.l-quit{width:40px; height:40px; display:grid; place-items:center; border-radius:50%; color:rgba(255,255,255,.75)}
+.l-quit:active{background:rgba(255,255,255,.1)}
+.l-clock{display:flex; align-items:baseline; gap:9px; min-width:0}
+.l-clock b{font-size:25px; font-weight:750; font-stretch:84%; font-variant-numeric:tabular-nums; letter-spacing:-.01em; transition:opacity .18s, transform .18s; display:inline-block}
+.l-clock b.tick{opacity:0; transform:translateY(-4px)}
+.l-clock span{font-size:13px; color:rgba(255,255,255,.6); white-space:nowrap}
+.l-dead{font-size:12.5px; font-weight:650; padding:5px 11px; border-radius:99px; border:1px solid rgba(255,255,255,.28); white-space:nowrap}
+.l-steps{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:2px 14px 9px; flex:none}
+.l-steps li{font-size:11.5px; font-weight:600; color:rgba(255,255,255,.38); border-top:2px solid rgba(255,255,255,.16); padding-top:4px; transition:color .3s, border-color .3s}
+.l-steps li.now{color:#fff; border-color:#fff}
+.l-steps li.done{color:rgba(255,255,255,.62); border-color:rgba(255,255,255,.62)}
+
+.l-desk{flex:1; min-height:0; position:relative; margin:0 8px}
+.app{position:absolute; inset:0; display:flex; flex-direction:column; opacity:0; transform:scale(.97); visibility:hidden;
+  transition:opacity .26s ease, transform .3s var(--ease), visibility 0s .3s}
+.app.is-front{opacity:1; transform:none; visibility:visible; transition:opacity .26s ease, transform .3s var(--ease)}
+
+.dock{flex:none; display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 12px calc(8px + var(--sab))}
+.dock button{height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; gap:8px; color:rgba(255,255,255,.78); font-size:14px; font-weight:650;
+  background:var(--nuit-2); position:relative; transition:background-color .2s, color .2s, opacity .35s, transform .35s var(--ease)}
+.dock button svg{width:19px; height:19px}
+.dock button.is-on{background:#fff; color:var(--nuit)}
+.dock button.hid{opacity:0; transform:scale(.85); pointer-events:none}
+.badge{position:absolute; top:-5px; right:-4px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--alerte); color:#fff; font-size:12px; font-weight:700; font-style:normal;
+  display:grid; place-items:center; transform:scale(0); transition:transform .3s var(--ease); box-shadow:0 0 0 2.5px var(--nuit)}
+.badge.on{transform:scale(1)}
+
+/* Cible à toucher */
+@keyframes ring{
+  0%,100%{box-shadow:0 0 0 1px rgba(20,27,60,.65), 0 0 0 4px var(--jaune), 0 0 0 4px rgba(242,200,17,.45)}
+  50%{box-shadow:0 0 0 1px rgba(20,27,60,.65), 0 0 0 4px var(--jaune), 0 0 0 10px rgba(242,200,17,0)}
+}
+.is-target{animation:ring 1.5s ease-in-out infinite; position:relative; z-index:3}
+@keyframes shake{20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(2px)}}
+.shake{animation:shake .36s ease}
+
+/* Avatars */
+.av{width:30px; height:30px; border-radius:50%; display:grid; place-items:center; flex:none; font-size:11.5px; font-weight:700; color:#fff; letter-spacing:.01em}
+.av-c{background:var(--violet)} .av-i{background:var(--orange)}
+
+/* ───────── Messages ───────── */
+.chat{flex:1; min-height:0; background:var(--craie); border-radius:14px; overflow:hidden; display:flex; flex-direction:column}
+.chat-h{flex:none; display:flex; align-items:center; gap:10px; padding:10px 12px; background:#fff; border-bottom:1px solid var(--ligne)}
+.chat-avs{display:flex} .chat-avs .av{box-shadow:0 0 0 2px #fff} .chat-avs .av + .av{margin-left:-9px}
+.chat-t b{display:block; font-size:15px; font-weight:700; line-height:1.2}
+.chat-t span{font-size:12.5px; color:var(--gris)}
+.chat-list{flex:1; min-height:0; overflow-y:auto; padding:10px 12px 12px; scrollbar-width:none; overscroll-behavior:contain}
+.chat-list::-webkit-scrollbar{display:none}
+.m{opacity:0; transform:translateY(8px); transition:opacity .28s ease, transform .32s var(--ease)}
+.m.in{opacity:1; transform:none}
+.m-in{display:grid; grid-template-columns:30px 1fr; column-gap:8px; margin-top:3px}
+.m-in.first{margin-top:12px}
+.m-meta{font-size:12px; color:var(--gris); margin:0 0 3px 2px; display:flex; gap:6px; align-items:baseline; flex-wrap:wrap}
+.m-meta b{color:var(--nuit); font-weight:700; font-size:13px}
+.m-b{background:#fff; border-radius:4px 15px 15px 15px; padding:8px 12px; width:fit-content; max-width:100%; font-size:14.5px; line-height:1.36; box-shadow:0 1px 0 rgba(20,27,60,.05)}
+.m-in:not(.first) .m-b{border-radius:15px}
+.m-out{display:flex; flex-direction:column; align-items:flex-end; margin-top:12px; padding-left:44px}
+.m-out .m-b{background:var(--violet); color:#fff; border-radius:15px 15px 4px 15px; box-shadow:none}
+.m-out .m-chart{background:#fff; border-radius:8px; padding:6px 6px 2px; margin:2px 0 7px; width:min(258px, 100%)}
+.m-time{text-align:center; font-size:12px; color:var(--gris); margin:14px 0 2px}
+.m-time:first-child{margin-top:4px}
+.typing{flex:none; height:26px; display:flex; align-items:center; gap:8px; padding:0 14px 6px 50px; font-size:12.5px; color:var(--gris); opacity:0; transition:opacity .2s}
+.typing.on{opacity:1}
+.typing .dots{display:flex; gap:3px}
+.dots i{width:5px; height:5px; border-radius:50%; background:#8C92AE; animation:dot 1s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s} .dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{transform:none; opacity:.5} 30%{transform:translateY(-3px); opacity:1}}
+.m-aside{display:grid; grid-template-columns:22px 1fr; gap:8px; align-items:start; margin:10px 0 0 38px; padding:9px 11px; border:1.5px dashed #C5CAD9; border-radius:12px; font-size:13.5px; line-height:1.36; color:#3B4163}
+.m-aside .av{width:22px; height:22px; font-size:9px}
+.m-aside b{font-weight:700; color:var(--nuit)}
+
+.file{display:grid; grid-template-columns:38px 1fr; column-gap:10px; align-items:center; background:#fff; border-radius:13px; padding:10px 12px 0; width:100%; max-width:262px; border:1px solid var(--ligne); text-align:left}
+.file-ic{width:38px; height:38px; border-radius:9px; background:#FFF3BF; display:grid; place-items:center; color:#6B5600}
+.file b{display:block; font-size:14px; font-weight:700; line-height:1.2}
+.file small{font-size:12.5px; color:var(--gris)}
+.file-go{grid-column:1/-1; margin-top:10px; padding:9px 0 10px; border-top:1px solid var(--ligne); font-size:13.5px; font-weight:700; color:var(--nuit); text-align:center}
+
+.reply{flex:none; display:grid; grid-template-rows:0fr; transition:grid-template-rows .38s var(--ease); background:#fff}
+.reply.on{grid-template-rows:1fr; box-shadow:0 -1px 0 var(--ligne)}
+.reply-in{overflow:hidden; min-height:0}
+.reply-pad{padding:11px 12px 12px}
+.reply-l{display:inline-block; font-size:12.5px; font-weight:750; background:var(--jaune); padding:3px 9px; border-radius:6px; margin-bottom:9px}
+#reply-opts{display:flex; flex-direction:column; gap:7px}
+.choice{display:block; width:100%; text-align:left; padding:10px 13px; border-radius:14px; border:1.5px solid var(--nuit); font-size:14.5px; line-height:1.32; font-weight:550; background:#fff;
+  transition:transform .12s ease, background-color .15s, opacity .3s, border-color .3s}
+.choice:active{transform:scale(.985); background:var(--craie)}
+.choice.no{opacity:.4; border-color:#B9BED0; text-decoration:line-through; pointer-events:none}
+
+/* ───────── Idriss, à côté ───────── */
+.coach{height:94px; flex:none; display:flex; gap:8px; align-items:flex-end; padding:0 2px 8px}
+.coach .av{margin-bottom:1px; transition:box-shadow .3s}
+.coach-thread{flex:1; min-width:0; height:100%; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end;
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 5px); mask-image:linear-gradient(to bottom, transparent 0, #000 5px)}
+.bub{display:grid; grid-template-rows:0fr; opacity:0; flex:none; transition:grid-template-rows .34s var(--ease), opacity .3s ease}
+.bub.in{grid-template-rows:1fr; opacity:1}
+.bub.in.old{opacity:.5}
+.bub.in.gone{opacity:0}
+.bub > div{overflow:hidden; min-height:0}
+.bub p{margin-top:5px; background:#fff; color:var(--nuit); padding:8px 12px; border-radius:15px 15px 15px 4px; font-size:14.5px; line-height:1.32; width:fit-content; max-width:100%}
+.bub.todo p{background:var(--jaune); font-weight:650}
+.bub.oops p{box-shadow:inset 3.5px 0 0 var(--alerte)}
+
+/* ───────── Power BI ───────── */
+.pbi{flex:1; min-height:0; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; color:var(--f-ink); font-size:12px; line-height:1.3; font-weight:450}
+.pbi-title{height:26px; flex:none; background:var(--f-bg); border-bottom:1px solid var(--f-line); display:flex; align-items:center; gap:7px; padding:0 10px; font-size:11.5px; color:var(--f-mid)}
+.pbi-title b{color:var(--f-ink); font-weight:650}
+.pbi-glyph{width:14px; height:14px; border-radius:3px; background:var(--jaune); display:grid; place-items:center}
+.pbi-body{flex:1; min-height:0; display:flex}
+.pbi-rail{width:36px; flex:none; background:var(--f-bg); border-right:1px solid var(--f-line); display:flex; flex-direction:column; padding-top:4px}
+.pbi-rail button{height:36px; display:grid; place-items:center; position:relative; color:#797775}
+.pbi-rail button svg{width:19px; height:19px}
+.pbi-rail button.is-on{color:var(--f-ink); background:#fff}
+.pbi-rail button.is-on::before{content:""; position:absolute; left:0; top:7px; bottom:7px; width:3px; background:var(--f-ink); border-radius:0 2px 2px 0}
+.pbi-main{flex:1; min-width:0; position:relative}
+.pbi-view{position:absolute; inset:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transition:opacity .25s ease, visibility 0s .25s}
+.pbi-view.is-on{opacity:1; visibility:visible; transition:opacity .25s ease}
+
+/* Vue Table */
+.tv-grid{flex:1; min-height:0; overflow:hidden}
+.tbl{width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; table-layout:auto}
+.tbl th{padding:0; background:var(--f-bg); border-bottom:1px solid #C8C6C4; border-right:1px solid var(--f-line); transition:background-color .25s}
+.tbl th button{display:block; width:100%; padding:8px 8px 7px; font-weight:650; text-align:left; white-space:nowrap}
+.tbl th.num button, .tbl td.num{text-align:right}
+.tbl td{padding:6px 8px; border-bottom:1px solid #EDEBE9; border-right:1px solid #EDEBE9; white-space:nowrap; transition:background-color .25s}
+.tbl th:last-child, .tbl td:last-child{border-right:0}
+.tbl.ask th{background:var(--jaune-2)}
+.tbl .c-ok{background:#DCEBFA !important}
+.tbl th.c-ok{box-shadow:inset 0 -2px 0 var(--f-blue)}
+.tv-status{height:24px; flex:none; border-top:1px solid var(--f-line); background:var(--f-bg); display:flex; align-items:center; padding:0 10px; font-size:11px; color:var(--f-mid)}
+
+/* Vue Rapport */
+.canvas{flex:1; min-height:0; background:#E9E8E7; padding:6px}
+.page{height:100%; background:#fff; box-shadow:0 0 0 1px #D8D6D4; position:relative}
+.page-empty{position:absolute; inset:0; display:grid; place-items:center; color:#A19F9D; font-size:12px; transition:opacity .3s; pointer-events:none}
+.visual:not([data-stage="none"]) ~ .page-empty, .page-empty.off{opacity:0}
+.visual{position:absolute; inset:7px; display:flex; flex-direction:column; opacity:0; transition:opacity .3s; pointer-events:none}
+.visual.on{opacity:1; pointer-events:auto}
+.v-frame{position:absolute; inset:-4px; border:1px solid #A19F9D; pointer-events:none}
+.v-frame i{position:absolute; width:5px; height:5px; background:#fff; border:1px solid #605E5C}
+.v-frame i:nth-child(1){left:-3px; top:-3px} .v-frame i:nth-child(2){right:-3px; top:-3px}
+.v-frame i:nth-child(3){left:-3px; bottom:-3px} .v-frame i:nth-child(4){right:-3px; bottom:-3px}
+.v-fold{display:grid; grid-template-rows:0fr; transition:grid-template-rows .5s var(--ease), opacity .4s; opacity:0; flex:none}
+.v-fold.on{grid-template-rows:1fr; opacity:1}
+.v-fold > div{overflow:hidden; min-height:0}
+.v-fold.open > div{overflow:visible}
+.v-title{font-size:11.5px; font-weight:650; height:17px; line-height:17px; padding:0 2px; white-space:nowrap}
+.v-legend{display:flex; align-items:center; gap:2px; height:24px; margin-left:-2px; width:fit-content; border-radius:4px}
+.v-legend button{display:flex; align-items:center; gap:4px; height:22px; padding:0 5px; font-size:10.5px; border-radius:3px; white-space:nowrap; transition:opacity .2s, background-color .2s}
+.v-legend button i{width:8px; height:8px; border-radius:50%; flex:none}
+.v-legend.has-iso button:not(.iso){opacity:.4}
+.v-legend button.iso{background:#EDEBE9; font-weight:650}
+.v-plot{flex:1; min-height:0; display:grid; grid-template-columns:30px 1fr; grid-template-rows:1fr 17px; padding-top:6px}
+.v-y{position:relative; font-size:9.5px; color:var(--f-mid); font-variant-numeric:tabular-nums; opacity:0; transition:opacity .4s}
+.v-y span{position:absolute; right:5px; transform:translateY(50%); white-space:nowrap}
+.v-area{position:relative; border-bottom:1px solid #C8C6C4; border-radius:2px}
+.v-grid{position:absolute; left:0; right:0; border-top:1px dotted #D2D0CE; opacity:0; transition:opacity .4s}
+.visual[data-stage="bars"] .v-y, .visual[data-stage="stack"] .v-y, .visual[data-stage="bars"] .v-grid, .visual[data-stage="stack"] .v-grid{opacity:1}
+.v-ghost{position:absolute; inset:0; display:flex; align-items:flex-end; opacity:0; transition:opacity .35s}
+.v-ghost i{flex:1; margin:0 4.4%; background:#E6E5E3}
+.visual[data-stage="ghost"] .v-ghost{opacity:1}
+.col{position:absolute; top:0; bottom:0; left:0; width:20%; display:flex; flex-direction:column-reverse; align-items:center; transition:transform .65s var(--ease), opacity .25s; cursor:pointer}
+.seg{width:58%; height:0; flex:none; position:relative; background:#118DFF; color:#118DFF; box-shadow:0 .6px 0 0 currentColor; transition:height .75s var(--ease), background-color .5s, color .5s, opacity .25s}
+.col{opacity:1}
+.col.dim{opacity:.35}
+.visual[data-stage="stack"] .seg{box-shadow:none}
+.visual.has-iso .seg:not(.iso){opacity:.2}
+.seg.iso{z-index:3}
+.sv{position:absolute; left:50%; bottom:calc(100% + 2px); transform:translateX(-50%); font-size:9.5px; font-weight:650; color:var(--f-ink); background:rgba(255,255,255,.94); border-radius:3px; padding:0 3px; line-height:14px; white-space:nowrap; opacity:0; transition:opacity .2s; pointer-events:none; font-variant-numeric:tabular-nums}
+.seg.iso .sv{opacity:1}
+.v-x{grid-column:2; position:relative}
+.v-x span{position:absolute; left:0; top:3px; width:20%; text-align:center; font-size:10px; color:var(--f-mid); white-space:nowrap; opacity:0; transition:transform .65s var(--ease), opacity .4s}
+.visual[data-stage="x"] .v-x span, .visual[data-stage="bars"] .v-x span, .visual[data-stage="stack"] .v-x span{opacity:1}
+.tip{position:absolute; left:0; top:0; z-index:6; background:#fff; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,.26); padding:6px 9px; font-size:10.5px; line-height:1.5; pointer-events:none; opacity:0; transition:opacity .15s; white-space:nowrap; font-variant-numeric:tabular-nums}
+.tip.on{opacity:1}
+.tip div{display:flex; justify-content:space-between; gap:12px}
+.tip span{color:var(--f-mid); display:flex; align-items:center; gap:4px} .tip span i{width:7px; height:7px; border-radius:50%}
+.tip b{font-weight:650}
+
+.panes{flex:none; display:grid; grid-template-columns:1.32fr 1fr; border-top:1px solid var(--f-line); background:var(--f-bg)}
+.pane{padding:5px 8px 9px; min-width:0}
+.pane + .pane{border-left:1px solid var(--f-line)}
+.pane-h{font-weight:650; font-size:12px; height:24px; display:flex; align-items:center}
+.viz-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:3px}
+.viz-grid button{height:28px; border-radius:3px; display:grid; place-items:center; color:#3B3A39; border:1px solid transparent}
+.viz-grid button svg{width:19px; height:19px}
+.viz-grid button:active{background:#E1DFDD}
+.viz-grid button.is-on{background:#fff; border-color:#8A8886}
+.wells{margin-top:8px; display:flex; flex-direction:column; gap:5px; opacity:0; pointer-events:none; transition:opacity .35s}
+.wells.on{opacity:1; pointer-events:auto}
+.well-g{display:grid; grid-template-columns:46px 1fr; align-items:center; gap:4px}
+.well-l{font-size:11px; color:var(--f-mid); white-space:nowrap}
+.well{height:28px; border:1px dashed #A19F9D; border-radius:3px; background:#fff; display:flex; align-items:center; padding:0 7px; font-size:10.5px; color:#8A8886; min-width:0; white-space:nowrap; transition:border-color .15s, background-color .15s}
+.well.filled{border-style:solid; border-color:#C8C6C4; color:var(--f-ink); font-size:11px; font-weight:550}
+.pbi.dragging .well:not(.filled), .pbi.armed .well:not(.filled){border-color:var(--f-blue)}
+.well.is-drop{background:#DCEBFA; border-color:var(--f-blue); border-style:solid}
+.chip{animation:chip .35s var(--ease)}
+@keyframes chip{from{opacity:0; transform:scale(.9)}}
+
+.tree-t{display:flex; align-items:center; gap:5px; height:26px; font-weight:650}
+.tree-t svg{width:13px; height:13px; color:var(--f-mid)}
+.field{display:flex; align-items:center; gap:6px; height:30px; width:100%; padding:0 4px 0 12px; border-radius:3px; touch-action:none; cursor:grab; white-space:nowrap}
+.field:active{background:#E1DFDD}
+.field.armed{background:#DCEBFA}
+.cb{width:13px; height:13px; border:1px solid var(--f-mid); border-radius:2px; flex:none; display:grid; place-items:center; background:#fff; transition:background-color .2s, border-color .2s}
+.cb svg{width:9px; height:9px; opacity:0; transition:opacity .2s}
+.field.used .cb{background:var(--f-ink); border-color:var(--f-ink)} .field.used .cb svg{opacity:1}
+.fi{width:13px; flex:none; font-size:12px; font-weight:700; color:var(--f-mid); text-align:center; line-height:1}
+.fi svg{width:13px; height:13px}
+
+.drag-ghost{position:fixed; left:0; top:0; z-index:999; pointer-events:none; transform-origin:0 0; background:#fff; color:#252423; font-size:12px; font-weight:550; padding:6px 10px; border-radius:4px;
+  box-shadow:0 6px 18px rgba(0,0,0,.3), inset 3px 0 0 #118DFF; white-space:nowrap; font-family:inherit}
+.hint-chip{position:absolute; left:0; top:0; z-index:7; pointer-events:none; opacity:0; background:#fff; font-size:11.5px; font-weight:550; padding:5px 9px; border-radius:4px; box-shadow:0 5px 14px rgba(0,0,0,.28), inset 3px 0 0 #118DFF; white-space:nowrap}
+
+.toast{position:absolute; right:8px; bottom:8px; z-index:9; width:236px; background:#fff; border-radius:12px; padding:10px 12px; display:grid; grid-template-columns:30px 1fr; gap:9px; align-items:center;
+  box-shadow:0 10px 30px rgba(8,12,36,.32), 0 0 0 1px rgba(20,27,60,.08); transform:translateX(120%); transition:transform .5s var(--ease); font-size:13px; line-height:1.3; color:var(--nuit)}
+.toast.on{transform:none}
+.toast b{display:block; font-weight:700}
+.toast span{color:#4D5373}
+.toast .av{color:#fff}
+
+/* ───────── Feuilles ───────── */
+.scrim{position:absolute; inset:0; z-index:40; background:rgba(8,11,30,.55); opacity:0; visibility:hidden; transition:opacity .3s ease, visibility 0s .3s}
+.scrim.on{opacity:1; visibility:visible; transition:opacity .3s ease}
+.sheet{position:absolute; left:0; right:0; bottom:0; z-index:41; background:#fff; border-radius:28px 28px 0 0; padding:26px 22px calc(20px + var(--sab)); transform:translateY(104%); visibility:hidden;
+  transition:transform .46s var(--ease), visibility 0s .46s; max-height:88%; overflow-y:auto; scrollbar-width:none}
+.sheet.on{transform:none; visibility:visible; transition:transform .46s var(--ease)}
+.sheet h2{font-size:27px; line-height:1.05; font-weight:800; font-stretch:80%; letter-spacing:-.01em; text-wrap:balance}
+.sheet p{font-size:15px; line-height:1.45; color:#3B4163; margin-top:10px}
+.sheet .cta{margin-top:20px}
+.btn-2{display:block; width:100%; height:48px; margin-top:8px; border-radius:14px; text-align:center; font-weight:650; color:var(--nuit)}
+.btn-2:active{background:var(--craie)}
+.end-chart{margin-top:16px; border:1px solid var(--f-line); border-radius:10px; padding:10px 10px 4px}
+.end-chart .t-cap{margin-bottom:2px}
+.end-take{font-size:17px !important; font-weight:650; color:var(--nuit) !important; line-height:1.3 !important; margin-top:16px !important}
+.end-take span{display:block}
+.end-facts{margin-top:12px; display:grid; gap:6px; font-size:14.5px; color:#3B4163}
+.end-facts li{padding-left:16px; position:relative}
+.end-facts li::before{content:""; position:absolute; left:0; top:.5em; width:7px; height:7px; border-radius:50%; background:var(--nuit)}
+.fiche-rules{margin-top:14px; display:grid; gap:0}
+.fiche-rules li{display:grid; grid-template-columns:74px 1fr; gap:10px; padding:11px 0; border-top:1px solid var(--ligne); font-size:14.5px; line-height:1.35; color:#3B4163}
+.fiche-rules li b{color:var(--nuit); font-weight:750}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+ <div class="phone-wrap" id="wrap">
+  <div class="phone" id="phone">
+   <div class="screen" id="screen">
+
+    <div class="statusbar" aria-hidden="true">
+      <span id="sb-time">9:41</span>
+      <span class="island"></span>
+      <span class="sb-r">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx=".8"/><rect x="5" y="5.5" width="3" height="6.5" rx=".8"/><rect x="10" y="3" width="3" height="9" rx=".8"/><rect x="15" y="0" width="3" height="12" rx=".8"/></svg>
+        <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".6" y=".6" width="21.8" height="11.8" rx="3.6" stroke="#fff" stroke-opacity=".45" stroke-width="1.2"/><rect x="2.2" y="2.2" width="18.6" height="8.6" rx="2.2" fill="#fff"/><path d="M24 4.5c.8.3 1.3 1 1.3 2s-.5 1.7-1.3 2z" fill="#fff" fill-opacity=".5"/></svg>
+      </span>
+    </div>
+
+    <!-- ══════════ Accueil : le rapport ══════════ -->
+    <section class="view tabview is-on" id="home">
+      <div class="scroll" id="home-scroll">
+        <header class="h-top">
+          <div class="wordmark">Mesure<i></i></div>
+          <div class="h-count"><b id="count">0</b>&nbsp;visuel sur&nbsp;6</div>
+        </header>
+        <h1 class="h-title">Le rapport de septembre</h1>
+        <p class="h-lede">Premier lundi chez Magnésie, cinq salles d’escalade en France. Chaque leçon pose un visuel de plus sur ton rapport.</p>
+
+        <div class="rsheet">
+          <div class="rsheet-h">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M3.6 9.2C3.2 5.3 6 2.6 9.8 2.6s7 2.3 6.6 6.6-3 8.2-7 8.2-5.4-4-5.8-8.2z" fill="#6A4DF4"/><circle cx="9.9" cy="9.4" r="1.7" fill="#fff"/></svg>
+            <b>Magnésie</b><span>Ventes de septembre 2026</span>
+          </div>
+          <div class="rgrid">
+            <article class="tile wide todo" id="tile-1">
+              <div class="t-todo">
+                <div class="t-head">
+                  <div>
+                    <span class="t-n">1</span>
+                    <h2>Ton premier visuel</h2>
+                    <p>Un histogramme empilé, monté à la main en six minutes.</p>
+                  </div>
+                  <div class="t-ghost" aria-hidden="true"><i style="height:94%"></i><i style="height:72%"></i><i style="height:58%"></i><i style="height:54%"></i><i style="height:40%"></i></div>
+                </div>
+                <button class="cta" id="start">Commencer la leçon</button>
+              </div>
+              <div class="t-done">
+                <div class="t-cap">Somme de Montant par Salle et Catégorie</div>
+                <div class="t-chart" id="tile-chart"></div>
+                <div class="t-foot"><span>Leçon 1 terminée</span><button class="link" id="replay">Rejouer la leçon</button></div>
+              </div>
+            </article>
+            <button class="tile locked" data-n="2"><span class="t-n">2</span><b>Le chiffre clé</b><small>Carte</small>
+              <svg class="t-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="5" width="15" height="10" rx="1.5" stroke-width="1.3"/><path d="M6 12V8.3l-1 .7M9 8.5c.4-.5 2.2-.5 2.2.6S9 11 9 12h2.4M13.4 8.3h2l-1.1 1.5c.8 0 1.3.5 1.3 1.1 0 1.2-1.8 1.4-2.4.6" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="tile locked" data-n="3"><span class="t-n">3</span><b>Filtrer d’un geste</b><small>Segment</small>
+              <svg class="t-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="3" y="3.5" width="14" height="13" rx="1.2" stroke-width="1.3"/><path d="M6 7.5h1.6M6 10h1.6M6 12.5h1.6" stroke-width="1.7"/><path d="M9.6 7.5H14M9.6 10H14M9.6 12.5H14" stroke-width="1.1"/></svg></button>
+            <button class="tile wide locked" data-n="4"><span class="t-n">4</span><b>Le mois, jour après jour</b><small>Graphique en courbes</small>
+              <svg class="t-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor"><path d="M3 14.5l4.5-6 4 3L17 5" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+            <button class="tile locked" data-n="5"><span class="t-n">5</span><b>Ta première mesure</b><small>Formule DAX</small>
+              <svg class="t-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor"><path d="M9.5 4.2c-2-.6-2.9.4-3.2 2.2l-1.1 7.2c-.2 1.3-.9 1.8-1.9 1.5M4.4 9h4M10.6 9.6l5 6M15.6 9.6l-5 6" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+            <button class="tile locked" data-n="6"><span class="t-n">6</span><b>Devant le comité</b><small>Mise en page</small>
+              <svg class="t-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="3" y="3.5" width="14" height="13" rx="1.2" stroke-width="1.3"/><path d="M3 8h14M9.5 8v8.5" stroke-width="1.2"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ Mémo ══════════ -->
+    <section class="view tabview" id="memo" inert>
+      <div class="scroll">
+        <header class="h-top"><div class="wordmark">Mesure<i></i></div></header>
+        <h1 class="m-title">Fiches mémo</h1>
+        <p class="h-lede">Chaque leçon terminée laisse une fiche, à relire en dix secondes avant une réunion.</p>
+        <div class="mgrid" id="mgrid"></div>
+      </div>
+    </section>
+
+    <nav class="tabbar" id="tabbar" aria-label="Navigation">
+      <div class="tabs">
+        <button class="tab is-on" data-tab="home"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="14" height="14" rx="2.5"/><path d="M7 13.5v-3M10 13.5V7M13 13.5v-2" stroke-linecap="round"/></svg>Rapport</button>
+        <button class="tab" data-tab="memo"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7.3 7.5h5.4M7.3 10.5h5.4M7.3 13.5h3" stroke-linecap="round"/></svg>Mémo</button>
+      </div>
+    </nav>
+
+    <!-- ══════════ Leçon 1 ══════════ -->
+    <section class="view lesson" id="lesson" aria-label="Leçon 1, Ton premier visuel" inert>
+      <header class="l-top">
+        <button class="l-quit" id="quit" aria-label="Quitter la leçon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l10 10M14 4L4 14"/></svg></button>
+        <div class="l-clock"><b id="clock">9&nbsp;h&nbsp;12</b><span>lundi 5 octobre</span></div>
+        <div class="l-dead">Comité à 10&nbsp;h</div>
+      </header>
+      <ol class="l-steps" id="steps"><li>Comprendre</li><li>Construire</li><li>Lire</li><li>Expliquer</li></ol>
+
+      <div class="l-desk">
+        <!-- Messages -->
+        <div class="app is-front" id="app-chat">
+          <div class="chat">
+            <div class="chat-h">
+              <div class="chat-avs"><span class="av av-c">CR</span><span class="av av-i">IB</span></div>
+              <div class="chat-t"><b>Ventes de septembre</b><span>Camille Roussel, Idriss Benali et toi</span></div>
+            </div>
+            <div class="chat-list" id="chat-list"></div>
+            <div class="typing" id="typing" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span id="typing-who"></span></div>
+            <div class="reply" id="reply"><div class="reply-in"><div class="reply-pad"><span class="reply-l">À toi de répondre</span><div id="reply-opts"></div></div></div></div>
+          </div>
+        </div>
+
+        <!-- Power BI -->
+        <div class="app" id="app-pbi" inert>
+          <div class="coach"><span class="av av-i">IB</span><div class="coach-thread" id="thread" aria-live="polite"></div></div>
+          <div class="pbi" id="pbi">
+            <div class="pbi-title"><i class="pbi-glyph"><svg width="9" height="9" viewBox="0 0 9 9" fill="#141B3C"><rect x="0" y="5" width="2.2" height="4"/><rect x="3.4" y="2.5" width="2.2" height="6.5"/><rect x="6.8" y="0" width="2.2" height="9"/></svg></i><b>ventes_septembre</b><span>Power BI Desktop</span></div>
+            <div class="pbi-body">
+              <div class="pbi-rail" id="rail">
+                <button data-view="report" aria-label="Vue Rapport"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="3" y="3" width="14" height="14" rx="1.2" stroke-width="1.3"/><path d="M7 14v-3.5M10 14V6.8M13 14v-2.2" stroke-width="1.7"/></svg></button>
+                <button data-view="table" aria-label="Vue Table" class="is-on"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="3" y="3.5" width="14" height="13" rx="1.2" stroke-width="1.3"/><path d="M3 7.8h14M3 12.1h14M8 3.5v13" stroke-width="1.1"/></svg></button>
+                <button data-view="model" aria-label="Vue Modèle"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="3" width="6.5" height="5" rx=".8"/><rect x="10.5" y="12" width="6.5" height="5" rx=".8"/><path d="M6.2 8v4.4c0 1.1.9 2.1 2 2.1h2.3"/></svg></button>
+              </div>
+              <div class="pbi-main">
+                <div class="pbi-view is-on" id="v-table">
+                  <div class="tv-grid"><table class="tbl" id="tbl"><thead><tr></tr></thead><tbody></tbody></table></div>
+                  <div class="tv-status">Table&nbsp;: ventes (22&nbsp;760&nbsp;lignes)</div>
+                </div>
+                <div class="pbi-view" id="v-report">
+                  <div class="canvas"><div class="page" id="page">
+                    <div class="visual" id="visual" data-stage="none">
+                      <div class="v-frame"><i></i><i></i><i></i><i></i></div>
+                      <div class="v-fold" id="fold-title"><div><div class="v-title" id="v-title"></div></div></div>
+                      <div class="v-fold" id="fold-legend"><div><div class="v-legend" id="v-legend"></div></div></div>
+                      <div class="v-plot">
+                        <div class="v-y" id="v-y"></div>
+                        <div class="v-area" id="v-area"><div class="v-ghost"><i style="height:62%"></i><i style="height:86%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:30%"></i></div><div class="tip" id="tip"></div></div>
+                        <div class="v-x" id="v-x"></div>
+                      </div>
+                    </div>
+                    <div class="page-empty">Aucun visuel sur cette page</div>
+                  </div></div>
+                  <div class="panes">
+                    <div class="pane">
+                      <div class="pane-h">Visualisations</div>
+                      <div class="viz-grid" id="viz"></div>
+                      <div class="wells" id="wells">
+                        <div class="well-g"><span class="well-l">Axe X</span><button class="well" data-well="x"></button></div>
+                        <div class="well-g"><span class="well-l">Axe Y</span><button class="well" data-well="y"></button></div>
+                        <div class="well-g"><span class="well-l">Légende</span><button class="well" data-well="legend"></button></div>
+                      </div>
+                    </div>
+                    <div class="pane">
+                      <div class="pane-h">Données</div>
+                      <div class="tree">
+                        <div class="tree-t"><svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3.5 3.5L10 5"/></svg><svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="1" y="1.5" width="11" height="10" rx="1"/><path d="M1 5h11M1 8.3h11M5 1.5v10"/></svg>ventes</div>
+                        <div id="fields"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button class="toast" id="toast"><span class="av av-c">CR</span><span><b>Camille Roussel</b><span id="toast-t"></span></span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="dock" aria-label="Applications ouvertes">
+        <button id="dock-chat" class="is-on"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 4.5h12a1.5 1.5 0 011.5 1.5v6.5A1.5 1.5 0 0116 14H9.5L6 17v-3H4a1.5 1.5 0 01-1.5-1.5V6A1.5 1.5 0 014 4.5z"/></svg>Messages<i class="badge" id="badge"></i></button>
+        <button id="dock-pbi" class="hid"><svg viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="10.5" width="3.4" height="6.5" rx=".8"/><rect x="8.3" y="6.5" width="3.4" height="10.5" rx=".8"/><rect x="13.6" y="3" width="3.4" height="14" rx=".8"/></svg>Power BI</button>
+      </nav>
+    </section>
+
+    <!-- ══════════ Feuilles ══════════ -->
+    <div class="scrim" id="scrim"></div>
+
+    <div class="sheet" id="sheet-end" role="dialog" aria-labelledby="end-h">
+      <h2 id="end-h">Ton premier visuel est prêt</h2>
+      <div class="end-chart"><div class="t-cap">Somme de Montant par Salle et Catégorie</div><div id="end-chart"></div></div>
+      <p class="end-take"><span>Le total montre qui décroche.</span> <span>Le découpage montre pourquoi.</span></p>
+      <ul class="end-facts"><li id="end-score"></li><li>Fiche mémo débloquée&nbsp;: l’histogramme empilé.</li></ul>
+      <button class="cta" id="end-go">Poser le visuel dans mon rapport</button>
+    </div>
+
+    <div class="sheet" id="sheet-quit" role="dialog" aria-labelledby="quit-h">
+      <h2 id="quit-h">Quitter la leçon&nbsp;?</h2>
+      <p>Camille n’aura pas sa réponse, et la leçon reprendra du début.</p>
+      <button class="cta" id="quit-no">Reprendre la leçon</button>
+      <button class="btn-2" id="quit-yes">Quitter</button>
+    </div>
+
+    <div class="sheet" id="sheet-locked" role="dialog" aria-labelledby="locked-h">
+      <h2 id="locked-h">Cet aperçu s’arrête à la leçon&nbsp;1</h2>
+      <p>Les leçons 2 à 6 poursuivent la même histoire chez Magnésie, un visuel après l’autre, jusqu’au rapport présenté au comité.</p>
+      <button class="cta" data-close>D’accord</button>
+    </div>
+
+    <div class="sheet" id="sheet-fiche" role="dialog" aria-labelledby="fiche-h">
+      <h2 id="fiche-h">L’histogramme empilé</h2>
+      <div class="end-chart"><div class="t-cap">Somme de Montant par Salle et Catégorie</div><div id="fiche-chart"></div></div>
+      <ul class="fiche-rules">
+        <li><b>Axe X</b><span>Ce que tu compares. Ici, les salles.</span></li>
+        <li><b>Axe Y</b><span>Ce que tu additionnes. Ici, le montant des ventes.</span></li>
+        <li><b>Légende</b><span>Ce qui découpe chaque barre. Ici, la catégorie. Un appui sur une catégorie l’isole dans tout le graphique.</span></li>
+      </ul>
+      <p class="end-take"><span>Le total montre qui décroche.</span> <span>Le découpage montre pourquoi.</span></p>
+      <button class="cta" data-close>Fermer la fiche</button>
+    </div>
+
+   </div>
+  </div>
+ </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const NB = ' ';
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+/* Espaces insécables à la française : avant ? ! : ; » €, dans les nombres et les heures */
+const fr = s => s
+  .replace(/ ([?!:;»€])/g, NB + '$1')
+  .replace(/« /g, '«' + NB)
+  .replace(/(\d) (?=\d{3}(?!\d))/g, '$1' + NB)
+  .replace(/(\d) (h|lignes)(?![a-zé])/g, '$1' + NB + '$2')
+  .replace(/(\d h) (\d)/g, '$1' + NB + '$2');
+const eur = n => n.toLocaleString('fr-FR').replace(/[   ]/g, NB) + NB + '€';
+const eur2 = n => n.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}).replace(/[   ]/g, NB) + NB + '€';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ───────── Données du cas ───────── */
+const SALLES = ['Paris', 'Lyon', 'Lille', 'Nantes', 'Bordeaux'];
+const CATS = ['Abonnements', 'Café', 'Cours', 'Entrées'];
+const COL = {'Abonnements': '#118DFF', 'Café': '#12239E', 'Cours': '#E66C37', 'Entrées': '#6B007B'};
+const V = {
+  Paris:    {'Abonnements': 46500, 'Café': 15300, 'Cours': 12400, 'Entrées': 38200},
+  Lyon:     {'Abonnements': 35800, 'Café': 11900, 'Cours':  9600, 'Entrées': 29100},
+  Lille:    {'Abonnements': 28900, 'Café':  9800, 'Cours':  7200, 'Entrées': 24300},
+  Nantes:   {'Abonnements': 26100, 'Café':  8700, 'Cours':  6900, 'Entrées': 22800},
+  Bordeaux: {'Abonnements':  6200, 'Café':  9500, 'Cours':  5100, 'Entrées': 27400}
+};
+const total = s => CATS.reduce((a, c) => a + V[s][c], 0);
+const MAX = 120000;
+const ALPHA = [...SALLES].sort((a, b) => a.localeCompare(b, 'fr'));
+const DESC = [...SALLES].sort((a, b) => total(b) - total(a));
+const ROWS = [
+  ['01/09/2026', 'Paris', 'Entrées', 15], ['01/09/2026', 'Bordeaux', 'Café', 4.5], ['01/09/2026', 'Lyon', 'Abonnements', 49],
+  ['01/09/2026', 'Nantes', 'Cours', 35], ['01/09/2026', 'Lille', 'Entrées', 15], ['01/09/2026', 'Paris', 'Café', 7.2],
+  ['01/09/2026', 'Bordeaux', 'Entrées', 15], ['01/09/2026', 'Lyon', 'Entrées', 15], ['01/09/2026', 'Paris', 'Abonnements', 49],
+  ['01/09/2026', 'Nantes', 'Café', 5.8], ['01/09/2026', 'Lille', 'Cours', 35], ['01/09/2026', 'Bordeaux', 'Entrées', 15],
+  ['01/09/2026', 'Paris', 'Cours', 35], ['01/09/2026', 'Lyon', 'Café', 6.4], ['01/09/2026', 'Lille', 'Abonnements', 49],
+  ['01/09/2026', 'Nantes', 'Entrées', 15], ['01/09/2026', 'Paris', 'Entrées', 15], ['01/09/2026', 'Bordeaux', 'Café', 8.1],
+  ['01/09/2026', 'Lyon', 'Entrées', 15], ['01/09/2026', 'Lille', 'Café', 3.9], ['01/09/2026', 'Nantes', 'Abonnements', 49],
+  ['01/09/2026', 'Paris', 'Café', 11.4], ['01/09/2026', 'Bordeaux', 'Entrées', 15], ['01/09/2026', 'Lyon', 'Cours', 35]
+];
+const COLS = ['Date', 'Salle', 'Catégorie', 'Montant'];
+const PEOPLE = {
+  camille: {name: 'Camille Roussel', role: 'Directrice des opérations', ini: 'CR', cls: 'av-c'},
+  idriss: {name: 'Idriss Benali', role: 'Analyste data', ini: 'IB', cls: 'av-i'}
+};
+const VIZ = [
+  ['bar', 'le graphique à barres empilées', '<rect x="3" y="3.6" width="7.5" height="3.3"/><rect x="10.5" y="3.6" width="5" height="3.3" opacity=".45"/><rect x="3" y="8.35" width="5" height="3.3"/><rect x="8" y="8.35" width="4" height="3.3" opacity=".45"/><rect x="3" y="13.1" width="9.5" height="3.3"/><rect x="12.5" y="13.1" width="4.5" height="3.3" opacity=".45"/>'],
+  ['column', 'l’histogramme empilé', '<rect x="3.6" y="9.5" width="3.3" height="7.5"/><rect x="3.6" y="4.5" width="3.3" height="5" opacity=".45"/><rect x="8.35" y="12" width="3.3" height="5"/><rect x="8.35" y="8" width="3.3" height="4" opacity=".45"/><rect x="13.1" y="7.5" width="3.3" height="9.5"/><rect x="13.1" y="3" width="3.3" height="4.5" opacity=".45"/>'],
+  ['line', 'le graphique en courbes', '<path d="M3 14.5l4.5-6 4 3L17 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>'],
+  ['area', 'le graphique en aires', '<path d="M3 14.5l4.5-6 4 3L17 5v12H3z" opacity=".4"/><path d="M3 14.5l4.5-6 4 3L17 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>'],
+  ['pie', 'le graphique en secteurs', '<circle cx="10" cy="10" r="7" opacity=".4"/><path d="M10 10V3a7 7 0 017 7z"/>'],
+  ['card', 'la carte', '<rect x="2.5" y="5" width="15" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 12.2V8.2l-1 .7M9 8.6c.4-.6 2.2-.6 2.2.6S9 11.2 9 12.2h2.4M13.4 8.2h2l-1.1 1.6c.8 0 1.3.5 1.3 1.1 0 1.3-1.8 1.5-2.4.6" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>'],
+  ['table', 'la table', '<rect x="3" y="3.5" width="14" height="13" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M3 7.8h14M3 12.1h14M8 3.5v13" fill="none" stroke="currentColor" stroke-width="1.1"/>'],
+  ['slicer', 'le segment', '<rect x="3" y="3.5" width="14" height="13" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 7.5h1.6M6 10h1.6M6 12.5h1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.6 7.5H14M9.6 10H14M9.6 12.5H14" fill="none" stroke="currentColor" stroke-width="1.1"/>']
+];
+const FIELD_ICON = {
+  'Date': '<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.1"><rect x="1.5" y="2.5" width="10" height="9" rx="1"/><path d="M1.5 5.3h10M4.3 1.2v2.4M8.7 1.2v2.4"/></svg>',
+  'Montant': 'Σ'
+};
+const LOCK = '<svg class="lock" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3.5" y="8" width="11" height="7.5" rx="1.8"/><path d="M6 8V6a3 3 0 016 0v2"/></svg>';
+
+/* Le même graphique, en petit (tuile du rapport, fin de leçon, message, fiche) */
+function miniChart({w = 300, h = 120, labels = true} = {}) {
+  const lb = labels ? 17 : 0, top = 4, ph = h - lb - top, step = w / 5, bw = step * .58;
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Histogramme empilé des ventes par salle et par catégorie">`;
+  DESC.forEach((sa, i) => {
+    let y = top + ph; const x = i * step + (step - bw) / 2;
+    CATS.forEach(c => { const hh = V[sa][c] / MAX * ph; y -= hh; s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(hh + .4).toFixed(1)}" fill="${COL[c]}"/>`; });
+    if (labels) s += `<text x="${(i * step + step / 2).toFixed(1)}" y="${h - 4}" text-anchor="middle" font-size="10" fill="#605E5C">${sa}</text>`;
+  });
+  s += `<line x1="0" y1="${top + ph}" x2="${w}" y2="${top + ph}" stroke="#C8C6C4"/>`;
+  return s + '</svg>';
+}
+
+const miniLegend = () => `<div class="mini-legend">${CATS.map(c => `<span><i style="background:${COL[c]}"></i>${c}</span>`).join('')}</div>`;
+
+/* ───────── Cadre : mise à l’échelle sur grand écran ───────── */
+let Z = 1;
+const wrap = $('#wrap'), phone = $('#phone');
+const mqMobile = matchMedia('(max-width:480px)');
+function fit() {
+  if (mqMobile.matches) { Z = 1; wrap.style.width = wrap.style.height = ''; phone.style.transform = ''; return; }
+  Z = clamp(Math.min((innerHeight - 24) / 864, (innerWidth - 24) / 410), .45, 1);
+  phone.style.transform = `scale(${Z})`; wrap.style.width = 410 * Z + 'px'; wrap.style.height = 864 * Z + 'px';
+}
+addEventListener('resize', fit); fit();
+const sbTime = () => { const d = new Date(); $('#sb-time').textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+sbTime(); setInterval(sbTime, 15000);
+
+/* ───────── Progression ───────── */
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem('mesure-apercu-1') || 'null'); } catch (e) { return null; } },
+  set(v) { try { localStorage.setItem('mesure-apercu-1', JSON.stringify(v)); } catch (e) {} }
+};
+let progress = store.get() || {done: false};
+
+const home = $('#home'), memo = $('#memo'), lessonEl = $('#lesson'), tabbar = $('#tabbar');
+const tile1 = $('#tile-1');
+function renderHome(pose) {
+  tile1.classList.toggle('done', !!progress.done); tile1.classList.toggle('todo', !progress.done);
+  $('#count').textContent = progress.done ? '1' : '0';
+  if (progress.done) $('#tile-chart').innerHTML = miniLegend() + miniChart({w: 310, h: 122});
+  tile1.classList.remove('pose');
+  if (pose) { void tile1.offsetWidth; tile1.classList.add('pose'); }
+  const g = $('#mgrid'); g.innerHTML = '';
+  const titres = ['L’histogramme empilé', 'La carte', 'Le segment', 'Le graphique en courbes', 'La mesure', 'La mise en page'];
+  titres.forEach((t, i) => {
+    const open = i === 0 && progress.done;
+    const el = document.createElement(open ? 'button' : 'div');
+    el.className = 'fiche-slot' + (open ? ' open' : '');
+    el.innerHTML = `<span class="fs-top"><span class="t-n">${i + 1}</span>${open ? '' : LOCK}</span><span><b>${t}</b>${open ? 'Relire la fiche' : (i === 0 ? 'À débloquer avec la leçon 1' : 'Leçon ' + (i + 1))}</span>`;
+    if (open) el.addEventListener('click', () => { $('#fiche-chart').innerHTML = miniLegend() + miniChart({w: 310, h: 122}); openSheet('fiche'); });
+    g.appendChild(el);
+  });
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => {
+  const t = b.dataset.tab;
+  $$('.tab').forEach(x => x.classList.toggle('is-on', x === b));
+  home.classList.toggle('is-on', t === 'home'); memo.classList.toggle('is-on', t === 'memo');
+  home.inert = t !== 'home'; memo.inert = t !== 'memo';
+}));
+$$('.tile.locked').forEach(b => b.addEventListener('click', () => openSheet('locked')));
+
+/* ───────── Feuilles ───────── */
+const scrim = $('#scrim');
+let sheetOpen = null;
+function openSheet(id) { closeSheet(); sheetOpen = $('#sheet-' + id); sheetOpen.classList.add('on'); scrim.classList.add('on'); }
+function closeSheet() { if (sheetOpen) sheetOpen.classList.remove('on'); sheetOpen = null; scrim.classList.remove('on'); }
+scrim.addEventListener('click', () => { if (sheetOpen && sheetOpen.id !== 'sheet-end') closeSheet(); });
+$$('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+
+/* ───────── Moteur de la leçon ───────── */
+class Cancel extends Error {}
+let run = 0, pending = null, expectation = null, queued = null, skipUntil = 0;
+let score = {}, startedAt = 0;
+const miss = k => { score[k] = false; };
+
+function sleep(ms, t, firm) {
+  return new Promise((res, rej) => {
+    if (t !== run) return rej(new Cancel());
+    if (!firm && performance.now() < skipUntil) ms = Math.min(ms, 70);
+    let id;
+    const me = {firm, flush() { clearTimeout(id); if (pending === me) pending = null; t === run ? res() : rej(new Cancel()); }};
+    id = setTimeout(me.flush, ms);
+    pending = me;
+  });
+}
+function hurry() { skipUntil = performance.now() + 500; if (pending && !pending.firm) pending.flush(); }
+function expect(handlers, t) {
+  return new Promise((resolve, reject) => {
+    if (t !== run) return reject(new Cancel());
+    expectation = {handlers, resolve, reject};
+    const q = queued; queued = null;
+    if (q && performance.now() - q.at < 1200 && handlers[q.type])
+      setTimeout(() => { if (expectation && expectation.handlers === handlers) act(q.type, q.payload); }, 0);
+  });
+}
+/* Toute action de la personne passe ici : 'ok', 'no' (mauvaise piste) ou 'queued' (trop tôt, on accélère le texte) */
+function act(type, payload) {
+  const e = expectation;
+  if (e && e.handlers[type]) {
+    if (e.handlers[type](payload)) { expectation = null; e.resolve(payload); return 'ok'; }
+    return 'no';
+  }
+  queued = {type, payload, at: performance.now()};
+  hurry();
+  return 'queued';
+}
+function cancelRun() {
+  run++;
+  const e = expectation; expectation = null; if (e) e.reject(new Cancel());
+  const p = pending; pending = null; if (p) p.flush();
+  queued = null; clearTimeout(oopsTimer); currentTodo = null;
+}
+
+/* ───────── Horloge de l’histoire, étapes ───────── */
+const clockEl = $('#clock');
+function setClock(s, now) {
+  const v = fr(s); if (clockEl.textContent === v) return;
+  if (now) { clockEl.textContent = v; return; }
+  clockEl.classList.add('tick');
+  setTimeout(() => { clockEl.textContent = v; clockEl.classList.remove('tick'); }, 190);
+}
+function setChapter(i) { $$('#steps li').forEach((li, k) => { li.classList.toggle('done', k < i); li.classList.toggle('now', k === i); }); }
+
+/* ───────── Applications ouvertes ───────── */
+const apps = {chat: $('#app-chat'), pbi: $('#app-pbi')};
+const dockBtn = {chat: $('#dock-chat'), pbi: $('#dock-pbi')};
+const badgeEl = $('#badge'), toast = $('#toast');
+let front = 'chat', unread = 0;
+function showApp(name) {
+  front = name;
+  for (const k in apps) { apps[k].classList.toggle('is-front', k === name); apps[k].inert = k !== name; dockBtn[k].classList.toggle('is-on', k === name); }
+  if (name === 'chat') { unread = 0; badgeEl.classList.remove('on'); toast.classList.remove('on'); scrollChat(true); }
+  else { disarm(); }
+}
+dockBtn.chat.addEventListener('click', () => { showApp('chat'); act('app', 'chat'); });
+dockBtn.pbi.addEventListener('click', () => { showApp('pbi'); act('app', 'pbi'); });
+toast.addEventListener('click', () => { showApp('chat'); act('app', 'chat'); });
+async function awaitApp(name, t) { if (front !== name) await expect({app: n => n === name}, t); }
+function notify(text) {
+  if (front === 'chat') return;
+  unread++; badgeEl.textContent = unread; badgeEl.classList.add('on');
+  $('#toast-t').textContent = fr(text); toast.classList.add('on');
+}
+
+/* ───────── Cibles ───────── */
+let targets = [], hintEl = null;
+function target(...els) { clearTargets(); targets = els.filter(Boolean); targets.forEach(e => e.classList.add('is-target')); }
+function clearTargets() { targets.forEach(e => e.classList.remove('is-target')); targets = []; stopHint(); }
+function stopHint() { if (hintEl) { hintEl.remove(); hintEl = null; } }
+function dragHint(fieldEl, wellEl) {
+  stopHint(); if (reduced) return;
+  const host = $('#v-report'), hb = host.getBoundingClientRect(), a = fieldEl.getBoundingClientRect(), b = wellEl.getBoundingClientRect();
+  hintEl = document.createElement('div'); hintEl.className = 'hint-chip'; hintEl.textContent = fieldEl.dataset.field;
+  host.appendChild(hintEl);
+  const x0 = (a.left - hb.left) / Z + 26, y0 = (a.top - hb.top) / Z + 2, x1 = (b.left - hb.left) / Z + 6, y1 = (b.top - hb.top) / Z + 1;
+  const A = `translate(${x0}px,${y0}px)`, B = `translate(${x1}px,${y1}px)`;
+  hintEl.animate([
+    {transform: A, opacity: 0, offset: 0}, {transform: A, opacity: .96, offset: .14},
+    {transform: B, opacity: .96, offset: .62}, {transform: B, opacity: .96, offset: .78},
+    {transform: B, opacity: 0, offset: .9}, {transform: B, opacity: 0, offset: 1}
+  ], {duration: 2600, iterations: Infinity, easing: 'cubic-bezier(.45,0,.2,1)', delay: 700});
+}
+function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+/* ───────── Messages ───────── */
+const chatList = $('#chat-list'), replyEl = $('#reply'), replyOpts = $('#reply-opts');
+let lastWho = null; const seenRole = new Set();
+function scrollChat(now) { chatList.scrollTo({top: chatList.scrollHeight, behavior: now || reduced ? 'auto' : 'smooth'}); }
+function reveal(el) { chatList.appendChild(el); requestAnimationFrame(() => requestAnimationFrame(() => { el.classList.add('in'); scrollChat(); })); return el; }
+function shell(who) {
+  const p = PEOPLE[who], first = lastWho !== who, role = seenRole.has(who) ? '' : `<span>${p.role}</span>`;
+  if (first) seenRole.add(who);
+  const el = document.createElement('div'); el.className = 'm m-in' + (first ? ' first' : '');
+  el.innerHTML = (first ? `<span class="av ${p.cls}">${p.ini}</span>` : '<span></span>') +
+    `<div class="m-body">${first ? `<div class="m-meta"><b>${p.name}</b>${role}</div>` : ''}<div class="m-b"></div></div>`;
+  return el;
+}
+function addMsg(who, text) {
+  let el;
+  if (who === 'me') { el = document.createElement('div'); el.className = 'm m-out'; el.innerHTML = '<div class="m-b"></div>'; }
+  else el = shell(who);
+  $('.m-b', el).textContent = fr(text); lastWho = who;
+  return reveal(el);
+}
+function addTime(s) { const el = document.createElement('div'); el.className = 'm m-time'; el.textContent = fr(s); lastWho = null; return reveal(el); }
+function addAside(text) {
+  const el = document.createElement('div'); el.className = 'm m-aside';
+  el.innerHTML = `<span class="av av-i">IB</span><p><b>Idriss, à côté de toi.</b> <span></span></p>`;
+  $('p span', el).textContent = fr(text); lastWho = null;
+  return reveal(el);
+}
+const typingEl = $('#typing');
+function typing(who) { typingEl.classList.toggle('on', !!who); if (who) $('#typing-who').textContent = PEOPLE[who].name + ' écrit…'; }
+async function chatSay(who, text, t) {
+  typing(who);
+  try { await sleep(clamp(420 + text.length * 9, 600, 1300), t); } finally { typing(null); }
+  const el = addMsg(who, text);
+  await sleep(clamp(300 + text.length * 20, 800, 2000), t);
+  return el;
+}
+function addFile() {
+  const el = shell('camille'); lastWho = 'camille';
+  $('.m-b', el).outerHTML = `<button class="file" id="file"><span class="file-ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3.5" width="14" height="13" rx="1.5"/><path d="M3 7.8h14M3 12.1h14M8 3.5v13"/></svg></span><span><b>ventes_septembre</b><small>Table ventes, 22${NB}760${NB}lignes</small></span><span class="file-go">Ouvrir dans Power BI</span></button>`;
+  reveal(el);
+  const f = $('.file', el);
+  f.addEventListener('click', () => { if (f.dataset.open) { showApp('pbi'); act('app', 'pbi'); } else act('file'); });
+  return f;
+}
+function keepBottom() { const t0 = performance.now(); (function tick() { chatList.scrollTop = chatList.scrollHeight; if (performance.now() - t0 < 460) requestAnimationFrame(tick); })(); }
+function choose(key, options, t) {
+  replyOpts.innerHTML = '';
+  options.forEach((o, i) => {
+    const b = document.createElement('button'); b.className = 'choice'; b.textContent = fr(o.text);
+    b.addEventListener('click', () => act('choice', i)); replyOpts.appendChild(b);
+  });
+  replyEl.classList.add('on'); keepBottom();
+  return expect({choice: i => {
+    const o = options[i]; if (o.ok) return true;
+    miss(key); const b = replyOpts.children[i]; shake(b); b.classList.add('no'); b.disabled = true; addAside(o.aside); return false;
+  }}, t).then(i => { replyEl.classList.remove('on'); return options[i]; });
+}
+chatList.addEventListener('click', e => { if (!e.target.closest('button')) hurry(); });
+
+/* ───────── Idriss, à côté ───────── */
+const thread = $('#thread');
+const readMs = text => clamp(700 + text.length * 34, 1300, 3600);
+let currentTodo = null, oopsTimer = 0;
+function say(text, kind = 'info', t) {
+  clearTimeout(oopsTimer);
+  if (kind === 'todo') currentTodo = text;
+  if (kind === 'oops' && currentTodo) {
+    const r = run, exp = expectation, txt = currentTodo;
+    oopsTimer = setTimeout(() => { if (r === run && exp === expectation && txt === currentTodo) say(txt, 'todo'); }, readMs(text) + 300);
+  }
+  const el = document.createElement('div'); el.className = 'bub ' + kind; el.innerHTML = '<div><p></p></div>';
+  $('p', el).textContent = fr(text);
+  const all = $$('.bub', thread);
+  if (all.length > 3) all.splice(0, all.length - 3).forEach(b => b.remove());
+  thread.appendChild(el);
+  /* Une bulle plus ancienne reste affichée seulement si elle tient en entier au-dessus de la nouvelle */
+  const hNew = $('p', el).offsetHeight + 5; let room = thread.clientHeight - 4 - hNew;
+  if (hNew > thread.clientHeight) (window.__trop = window.__trop || []).push(text);
+  for (let i = all.length - 1; i >= 0; i--) {
+    const b = all[i], h = $('p', b).offsetHeight + 5; b.classList.add('old');
+    if (room >= h && !b.classList.contains('gone')) room -= h; else { b.classList.add('gone'); room = -1; }
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  return (kind === 'info' && t !== undefined) ? sleep(readMs(text), t) : Promise.resolve();
+}
+$('.coach').addEventListener('click', hurry);
+
+/* ───────── Power BI : vue Table ───────── */
+const tbl = $('#tbl');
+const ths = {};
+(function buildTable() {
+  const tr = $('thead tr', tbl);
+  COLS.forEach((c, i) => {
+    const th = document.createElement('th'); if (c === 'Montant') th.className = 'num';
+    th.innerHTML = `<button>${c}</button>`; th.dataset.i = i;
+    $('button', th).addEventListener('click', () => act('th', c));
+    tr.appendChild(th); ths[c] = th;
+  });
+  const tb = $('tbody', tbl);
+  ROWS.forEach(r => {
+    const row = document.createElement('tr');
+    r.forEach((v, i) => { const td = document.createElement('td'); td.textContent = i === 3 ? eur2(v) : v; if (i === 3) td.className = 'num'; row.appendChild(td); });
+    tb.appendChild(row);
+  });
+})();
+function markCol(c, ok) {
+  const i = COLS.indexOf(c);
+  if (!ok) { shake($('button', ths[c])); return; }
+  ths[c].classList.add('c-ok'); $$('tbody tr', tbl).forEach(r => r.children[i].classList.add('c-ok'));
+}
+
+/* ───────── Power BI : vues ───────── */
+const railBtn = {}; $$('#rail button').forEach(b => railBtn[b.dataset.view] = b);
+let reportUnlocked = false;
+function setView(v) {
+  $('#v-table').classList.toggle('is-on', v === 'table'); $('#v-report').classList.toggle('is-on', v === 'report');
+  $('#v-table').inert = v !== 'table'; $('#v-report').inert = v !== 'report';
+  railBtn.table.classList.toggle('is-on', v === 'table'); railBtn.report.classList.toggle('is-on', v === 'report');
+}
+for (const v in railBtn) railBtn[v].addEventListener('click', () => {
+  const r = act('rail', v);
+  if (r === 'queued' && reportUnlocked && v !== 'model') setView(v);
+});
+
+/* ───────── Power BI : le visuel ───────── */
+const visual = $('#visual'), area = $('#v-area'), tip = $('#tip'), legendEl = $('#v-legend');
+const cols = {}, segs = {}, xl = {};
+let stage = 'none', selected = null, iso = null;
+(function buildVisual() {
+  [0, 50000, 100000].forEach(v => {
+    const s = document.createElement('span'); s.textContent = (v / 1000) + NB + 'K'; s.style.bottom = (v / MAX * 100) + '%'; $('#v-y').appendChild(s);
+    if (v) { const g = document.createElement('div'); g.className = 'v-grid'; g.style.bottom = (v / MAX * 100) + '%'; area.insertBefore(g, tip); }
+  });
+  SALLES.forEach(sa => {
+    const c = document.createElement('button'); c.className = 'col'; c.setAttribute('aria-label', sa); segs[sa] = {};
+    CATS.forEach(cat => {
+      const s = document.createElement('span'); s.className = 'seg'; s.dataset.cat = cat;
+      s.innerHTML = `<span class="sv">${eur(V[sa][cat])}</span>`; c.appendChild(s); segs[sa][cat] = s;
+    });
+    c.addEventListener('click', e => { e.stopPropagation(); tapBar(sa); });
+    area.insertBefore(c, tip); cols[sa] = c;
+    const l = document.createElement('span'); l.textContent = sa; $('#v-x').appendChild(l); xl[sa] = l;
+  });
+  CATS.forEach(cat => {
+    const b = document.createElement('button'); b.dataset.cat = cat; b.innerHTML = `<i style="background:${COL[cat]}"></i>${cat}`;
+    b.addEventListener('click', e => { e.stopPropagation(); tapLegend(cat); }); legendEl.appendChild(b);
+  });
+  $('#page').addEventListener('click', clearSel);
+})();
+const order = () => (stage === 'bars' || stage === 'stack') ? DESC : ALPHA;
+function setStage(s) {
+  stage = s; visual.dataset.stage = s; visual.classList.toggle('on', s !== 'none');
+  const full = s === 'bars' || s === 'stack', ord = order();
+  SALLES.forEach(sa => {
+    const t = `translateX(${ord.indexOf(sa) * 100}%)`;
+    cols[sa].style.transform = t; xl[sa].style.transform = t;
+    cols[sa].style.pointerEvents = full ? '' : 'none';
+    CATS.forEach(c => {
+      const g = segs[sa][c]; g.style.height = full ? (V[sa][c] / MAX * 100) + '%' : '0%';
+      g.style.backgroundColor = g.style.color = s === 'stack' ? COL[c] : '#118DFF';
+    });
+  });
+  if (full) $('#v-title').textContent = s === 'stack' ? 'Somme de Montant par Salle et Catégorie' : 'Somme de Montant par Salle';
+  $('#fold-title').classList.toggle('on', full);
+  const fl = $('#fold-legend'); fl.classList.toggle('on', s === 'stack'); fl.classList.remove('open');
+  if (s === 'stack') setTimeout(() => { if (stage === 'stack') fl.classList.add('open'); }, 620);
+  clearSel();
+}
+function clearSel() {
+  selected = null; iso = null; tip.classList.remove('on');
+  SALLES.forEach(sa => { cols[sa].classList.remove('dim'); CATS.forEach(c => segs[sa][c].classList.remove('iso')); });
+  visual.classList.remove('has-iso'); legendEl.classList.remove('has-iso'); $$('button', legendEl).forEach(b => b.classList.remove('iso'));
+}
+function showTip(sa) {
+  let rows = `<div><span>Salle</span><b>${sa}</b></div>`;
+  if (stage === 'stack') CATS.forEach(c => rows += `<div><span><i style="background:${COL[c]}"></i>${c}</span><b>${eur(V[sa][c])}</b></div>`);
+  else rows += `<div><span>Somme de Montant</span><b>${eur(total(sa))}</b></div>`;
+  tip.innerHTML = rows;
+  const W = area.clientWidth, H = area.clientHeight, step = W / 5, i = order().indexOf(sa), tw = tip.offsetWidth, th = tip.offsetHeight;
+  const barTop = H - total(sa) / MAX * H; let x, y;
+  if (barTop - th - 6 >= -30) { x = i * step + step / 2 - tw / 2; y = barTop - th - 6; }
+  else { x = i < 3 ? (i + 1) * step - step * .16 : i * step + step * .16 - tw; y = Math.max(-30, Math.min(4, H - th - 4)); }
+  tip.style.transform = `translate(${clamp(x, 0, Math.max(0, W - tw)).toFixed(1)}px,${y.toFixed(1)}px)`;
+  tip.classList.add('on');
+}
+function tapBar(sa) {
+  if (stage !== 'bars' && stage !== 'stack') return;
+  if (selected === sa) { clearSel(); return; }
+  clearSel(); selected = sa;
+  SALLES.forEach(s => cols[s].classList.toggle('dim', s !== sa)); showTip(sa);
+  act('bar', sa);
+}
+function tapLegend(cat) {
+  if (stage !== 'stack') return;
+  if (iso === cat) { clearSel(); return; }
+  clearSel(); iso = cat; visual.classList.add('has-iso'); legendEl.classList.add('has-iso');
+  SALLES.forEach(sa => segs[sa][cat].classList.add('iso'));
+  $$('button', legendEl).forEach(b => b.classList.toggle('iso', b.dataset.cat === cat));
+  act('legend', cat);
+}
+
+/* ───────── Power BI : volets, glisser-déposer ───────── */
+const pbi = $('#pbi'), wellsEl = $('#wells');
+const vizBtn = {}, fieldEl = {}, wellEl = {};
+VIZ.forEach(([id, nom, svg]) => {
+  const b = document.createElement('button'); b.setAttribute('aria-label', nom.replace(/^(le |la |l’)/, ''));
+  b.innerHTML = `<svg viewBox="0 0 20 20" fill="currentColor">${svg}</svg>`;
+  b.addEventListener('click', () => act('viz', id)); $('#viz').appendChild(b); vizBtn[id] = b;
+});
+['Catégorie', 'Date', 'Montant', 'Salle'].forEach(f => {
+  const b = document.createElement('button'); b.className = 'field'; b.dataset.field = f;
+  b.innerHTML = `<i class="cb"><svg viewBox="0 0 9 9" fill="none" stroke="#fff" stroke-width="1.6"><path d="M1.5 4.6l2.1 2.1 3.9-4.2"/></svg></i><span class="fi">${FIELD_ICON[f] || ''}</span>${f}`;
+  $('#fields').appendChild(b); fieldEl[f] = b;
+});
+$$('.well').forEach(w => { wellEl[w.dataset.well] = w; });
+function emptyWells() { for (const k in wellEl) { wellEl[k].classList.remove('filled', 'is-drop'); wellEl[k].textContent = 'Ajouter un champ ici'; } }
+function place(field, well) {
+  const w = wellEl[well]; w.classList.add('filled');
+  w.innerHTML = `<span class="chip">${well === 'y' ? 'Somme de ' + field : field}</span>`;
+  fieldEl[field].classList.add('used');
+}
+let drag = null, armed = null, ghost = null;
+function disarm() { if (armed) armed.classList.remove('armed'); armed = null; pbi.classList.remove('armed'); }
+const wellAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.well') : null; };
+function ghostTo(x, y) { ghost.style.transform = `translate(${x - 14 * Z}px,${y - 16 * Z}px) scale(${Z})`; }
+function dropGhost(g, toEl) {
+  if (!g) return;
+  if (!toEl || reduced) { g.remove(); return; }
+  const r = toEl.getBoundingClientRect();
+  const a = g.animate([{transform: g.style.transform, opacity: 1}, {transform: `translate(${r.left + 4 * Z}px,${r.top}px) scale(${Z})`, opacity: 0}], {duration: 260, easing: 'cubic-bezier(.22,.8,.24,1)'});
+  a.onfinish = () => g.remove();
+}
+function attemptDrop(field, well, g) {
+  const r = act('drop', {field, well});
+  if (r === 'ok') dropGhost(g, wellEl[well]);
+  else if (r === 'no') { dropGhost(g, fieldEl[field]); shake(wellEl[well]); }
+  else if (g) g.remove();
+}
+for (const f in fieldEl) {
+  const el = fieldEl[f];
+  el.addEventListener('pointerdown', e => {
+    if (!wellsEl.classList.contains('on') || el.classList.contains('used')) return;
+    e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    drag = {el, id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false}; stopHint();
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag || drag.id !== e.pointerId) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) {
+      drag.moved = true; disarm(); pbi.classList.add('dragging');
+      ghost = document.createElement('div'); ghost.className = 'drag-ghost'; ghost.textContent = f; document.body.appendChild(ghost);
+    }
+    if (drag.moved) {
+      ghostTo(e.clientX, e.clientY);
+      const w = wellAt(e.clientX, e.clientY); for (const k in wellEl) wellEl[k].classList.toggle('is-drop', wellEl[k] === w && !w.classList.contains('filled'));
+    }
+  });
+  const end = e => {
+    if (!drag || drag.id !== e.pointerId) return;
+    const d = drag, g = ghost; drag = null; ghost = null; pbi.classList.remove('dragging');
+    for (const k in wellEl) wellEl[k].classList.remove('is-drop');
+    if (e.type === 'pointercancel') { if (g) g.remove(); return; }
+    if (d.moved) {
+      const w = wellAt(e.clientX, e.clientY);
+      if (w && !w.classList.contains('filled')) attemptDrop(f, w.dataset.well, g); else dropGhost(g, d.el);
+    } else {
+      if (armed === d.el) disarm(); else { disarm(); armed = d.el; d.el.classList.add('armed'); pbi.classList.add('armed'); }
+    }
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (armed === el) disarm(); else { disarm(); armed = el; el.classList.add('armed'); pbi.classList.add('armed'); } } });
+}
+for (const k in wellEl) wellEl[k].addEventListener('click', () => {
+  if (!armed || wellEl[k].classList.contains('filled')) return;
+  const f = armed.dataset.field; disarm(); attemptDrop(f, k, null);
+});
+
+/* ───────── Remise à zéro ───────── */
+function resetLesson() {
+  score = {}; chatList.innerHTML = ''; lastWho = null; seenRole.clear(); replyEl.classList.remove('on'); replyOpts.innerHTML = '';
+  thread.innerHTML = ''; currentTodo = null; clearTargets(); disarm();
+  tbl.classList.remove('ask'); $$('.c-ok', tbl).forEach(e => e.classList.remove('c-ok'));
+  reportUnlocked = false; setView('table');
+  for (const k in vizBtn) vizBtn[k].classList.remove('is-on');
+  wellsEl.classList.remove('on'); emptyWells();
+  for (const k in fieldEl) fieldEl[k].classList.remove('used');
+  setStage('none');
+  dockBtn.pbi.classList.add('hid'); unread = 0; badgeEl.classList.remove('on'); toast.classList.remove('on');
+  showApp('chat'); setClock('9 h 12', true); setChapter(0);
+}
+
+/* ───────── Le déroulé de la leçon ───────── */
+async function lesson(t) {
+  const S = text => say(text, 'info', t);
+  const pause = ms => sleep(ms, t, true);
+
+  /* 1. La demande de Camille */
+  await pause(650);
+  addTime('Lundi 5 octobre, 09:12');
+  await chatSay('camille', 'Salut ! Bienvenue chez Magnésie.', t);
+  await chatSay('camille', 'Désolée de te solliciter dès ton premier lundi : j’ai le comité de direction à 10 h.', t);
+  await chatSay('camille', 'Septembre est sous l’objectif. Une de nos cinq salles tire le chiffre vers le bas.', t);
+  await chatSay('camille', 'Il me faut son nom avant la réunion.', t);
+  const file = addFile();
+  await sleep(1000, t);
+  await chatSay('idriss', 'Je suis à côté si tu bloques. Ouvre le fichier, on regarde ça ensemble.', t);
+  target(file);
+  await expect({file: () => true}, t);
+  clearTargets(); file.dataset.open = '1'; $('.file-go', file).textContent = 'Ouvert dans Power BI';
+
+  /* 2. La table ventes */
+  setClock('9 h 16'); dockBtn.pbi.classList.remove('hid'); showApp('pbi');
+  await pause(450);
+  await S('Voici la table ventes. Une ligne par passage en caisse.');
+  await S('22 760 lignes rien que pour septembre. Personne ne lit ça à l’œil nu.');
+  say('Camille veut comparer les salles. Touche l’en-tête de la colonne qui dit où la vente a eu lieu.', 'todo');
+  tbl.classList.add('ask');
+  await expect({th: c => {
+    if (c === 'Salle') return true;
+    miss('c1'); markCol(c, false);
+    say({'Date': 'La date dit quand la vente a eu lieu, pas où.', 'Catégorie': 'La catégorie dit ce qui a été vendu, pas où.', 'Montant': 'Le montant dit combien, pas où.'}[c], 'oops');
+    return false;
+  }}, t);
+  markCol('Salle', true);
+  await S('Oui. La salle, c’est ce qu’on va comparer.');
+  say('Touche maintenant l’en-tête de la colonne qui contient l’argent encaissé.', 'todo');
+  await expect({th: c => {
+    if (c === 'Montant') return true;
+    miss('c2'); markCol(c, false);
+    say(c === 'Date' ? 'Ce sont des dates. Cherche la colonne en euros.' : c === 'Salle' ? 'La salle, on la garde pour comparer. Cherche la colonne en euros.' : 'Cette colonne contient du texte. Cherche celle en euros.', 'oops');
+    return false;
+  }}, t);
+  markCol('Montant', true); tbl.classList.remove('ask');
+  await S('Le montant, c’est ce qu’on va additionner.');
+  say('On a de quoi faire un graphique. À gauche, touche l’icône du haut pour ouvrir la vue Rapport.', 'todo');
+  target(railBtn.report);
+  await expect({rail: v => {
+    if (v === 'report') return true;
+    if (v === 'model') say('Celle-ci ouvre la vue Modèle. La vue Rapport, c’est l’icône du haut.', 'oops');
+    return false;
+  }}, t);
+  clearTargets(); reportUnlocked = true; setView('report'); setChapter(1); setClock('9 h 20');
+
+  /* 3. Construire le visuel */
+  await pause(420);
+  await S('Voici la page du rapport. Elle est encore vide.');
+  say('Dans Visualisations, touche l’histogramme empilé : l’icône aux barres verticales.', 'todo');
+  target(vizBtn.column);
+  await expect({viz: id => {
+    if (id === 'column') return true;
+    miss('viz'); shake(vizBtn[id]);
+    say(id === 'bar' ? 'Presque : ici, les barres sont couchées. Il faut celles qui sont debout.' : `Ça, c’est ${VIZ.find(v => v[0] === id)[1]}. Cherche l’icône aux barres verticales.`, 'oops');
+    return false;
+  }}, t);
+  clearTargets(); vizBtn.column.classList.add('is-on'); emptyWells(); wellsEl.classList.add('on'); setStage('ghost');
+  await pause(380);
+  await S('Un cadre vide s’est posé sur la page. Il lui faut des données.');
+  say('Dans Données, fais glisser Salle jusqu’à la case Axe X.', 'todo');
+  target(fieldEl['Salle'], wellEl.x); dragHint(fieldEl['Salle'], wellEl.x);
+  await expect({drop: ({field, well}) => {
+    if (field === 'Salle' && well === 'x') return true;
+    miss('dx'); say(field !== 'Salle' ? 'Sur l’axe X, on met ce qu’on compare. Prends Salle.' : 'Salle va dans la case Axe X, celle du haut.', 'oops');
+    return false;
+  }}, t);
+  clearTargets(); place('Salle', 'x'); setStage('x'); setClock('9 h 23');
+  await pause(520);
+  await S('Les cinq salles s’alignent en bas du graphique.');
+  say('Il manque la hauteur des barres. Fais glisser Montant vers la case Axe Y.', 'todo');
+  target(fieldEl['Montant'], wellEl.y); dragHint(fieldEl['Montant'], wellEl.y);
+  await expect({drop: ({field, well}) => {
+    if (field === 'Montant' && well === 'y') return true;
+    miss('dy'); say(field !== 'Montant' ? 'Pour la hauteur des barres, il faut des euros. Prends Montant.' : 'Montant va dans la case Axe Y, celle du milieu.', 'oops');
+    return false;
+  }}, t);
+  clearTargets(); place('Montant', 'y'); setStage('bars'); setClock('9 h 26'); setChapter(2);
+
+  /* 4. Lire le visuel */
+  await pause(950);
+  await S('Les 22 760 lignes viennent d’être additionnées, salle par salle. La case indique « Somme de Montant ».');
+  await S('Les barres sont rangées de la plus haute à la plus basse.');
+  say('Touche la barre de la salle qui a le moins encaissé.', 'todo');
+  target(area);
+  await expect({bar: sa => {
+    if (sa === 'Bordeaux') return true;
+    miss('bar'); say(`${sa} a encaissé ${eur(total(sa))}. Une barre est plus basse.`, 'oops');
+    return false;
+  }}, t);
+  clearTargets();
+  await S('Bordeaux : 48 200 €. Paris encaisse plus du double.');
+  setClock('9 h 27');
+  addTime('09:27'); addMsg('camille', 'Alors, c’est laquelle ?'); notify('Alors, c’est laquelle ?');
+  if (front !== 'chat') { say('Camille t’écrit. Ouvre Messages, en bas de l’écran.', 'todo'); target(dockBtn.chat); }
+  await awaitApp('chat', t);
+  clearTargets();
+  await pause(380);
+  const a1 = await choose('q1', [
+    {text: 'Nantes, avec 64 500 €.', aside: 'Regarde encore le graphique dans Power BI. Une barre est plus basse que celle de Nantes.'},
+    {text: 'Bordeaux, avec 48 200 €.', ok: true},
+    {text: 'Lille, avec 70 200 €.', aside: 'Regarde encore le graphique dans Power BI. Deux barres sont plus basses que celle de Lille.'}
+  ], t);
+  addMsg('me', a1.text); setClock('9 h 31');
+  await sleep(700, t);
+  await chatSay('camille', 'Bordeaux ? La salle est pleine tous les soirs.', t);
+  await chatSay('camille', 'Un nom ne suffira pas devant le comité. Il me faut le pourquoi.', t);
+  await chatSay('idriss', 'On peut découper chaque barre par type de vente. Retourne dans Power BI.', t);
+  setChapter(3);
+
+  /* 5. Expliquer */
+  say('Chaque vente a une catégorie. Fais glisser Catégorie vers la case Légende.', 'todo');
+  if (front !== 'pbi') target(dockBtn.pbi);
+  await awaitApp('pbi', t);
+  clearTargets(); clearSel(); setView('report');
+  await pause(340);
+  target(fieldEl['Catégorie'], wellEl.legend); dragHint(fieldEl['Catégorie'], wellEl.legend);
+  await expect({drop: ({field, well}) => {
+    if (field === 'Catégorie' && well === 'legend') return true;
+    miss('dl'); say(field !== 'Catégorie' ? 'Pour découper les barres, prends Catégorie.' : 'Catégorie va dans la case Légende, celle du bas.', 'oops');
+    return false;
+  }}, t);
+  clearTargets(); place('Catégorie', 'legend'); setStage('stack'); setClock('9 h 38');
+  await pause(950);
+  await S('Chaque barre se découpe en quatre couleurs, une par catégorie.');
+  say('Dans la légende, touche une catégorie pour l’isoler. Cherche celle où Bordeaux décroche.', 'todo');
+  target(legendEl);
+  await expect({legend: c => {
+    clearTargets();
+    say({
+      'Entrées': 'Entrées : 27 400 € à Bordeaux, plus qu’à Lille et à Nantes. La salle ne manque pas de monde.',
+      'Café': 'Café : 9 500 € à Bordeaux, au niveau des autres salles. Cherche encore.',
+      'Cours': 'Cours : 5 100 € à Bordeaux, un peu moins qu’à Nantes. L’écart reste mince.',
+      'Abonnements': 'Abonnements : 6 200 € à Bordeaux, contre 26 100 € à Nantes. L’écart est là.'
+    }[c]);
+    return c === 'Abonnements';
+  }}, t);
+  setClock('9 h 46');
+  await sleep(3000, t);
+  addTime('09:46'); addMsg('camille', 'J’entre en réunion dans dix minutes. Qu’est-ce que je dis sur Bordeaux ?'); notify('J’entre en réunion dans dix minutes.');
+  if (front !== 'chat') { say('Tu tiens l’explication. Camille attend dans Messages.', 'todo'); target(dockBtn.chat); }
+  await awaitApp('chat', t);
+  clearTargets();
+  await pause(380);
+  const a2 = await choose('q2', [
+    {text: 'Bordeaux manque de visiteurs : 27 400 € d’entrées, c’est trop peu.', aside: '27 400 € d’entrées, c’est plus qu’à Lille et à Nantes. Bordeaux ne manque pas de visiteurs.'},
+    {text: 'Le café de Bordeaux est à la traîne : 9 500 € seulement.', aside: '9 500 € de café, c’est le niveau des autres salles. Regarde plutôt le bas des barres.'},
+    {text: 'Bordeaux a du monde mais presque pas d’abonnés : 6 200 € d’abonnements, contre 26 100 € à Nantes.', ok: true}
+  ], t);
+  const mine = addMsg('me', a2.text);
+  $('.m-b', mine).insertAdjacentHTML('afterbegin', `<div class="m-chart">${miniChart({w: 246, h: 98})}</div>`);
+  setClock('9 h 50');
+  await sleep(900, t);
+  await chatSay('camille', 'Une salle pleine de visiteurs de passage, mais sans abonnés. Tout s’explique.', t);
+  await chatSay('camille', 'Je propose une offre d’abonnement pour Bordeaux au comité.', t);
+  await chatSay('camille', 'Merci. Beau travail pour un premier lundi.', t);
+  finish();
+}
+
+const KEYS = ['c1', 'c2', 'viz', 'dx', 'dy', 'bar', 'q1', 'dl', 'q2'];
+function finish() {
+  $$('#steps li').forEach(li => { li.classList.remove('now'); li.classList.add('done'); });
+  const good = KEYS.filter(k => score[k] !== false).length, secs = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+  const m = Math.floor(secs / 60), s = secs % 60;
+  const dur = m ? `${m}${NB}min${NB}${String(s).padStart(2, '0')}` : `${s}${NB}secondes`;
+  progress = {done: true, good, secs}; store.set(progress);
+  const pl = good > 1 ? 's' : '';
+  $('#end-score').textContent = `${good} geste${pl} sur ${KEYS.length} réussi${pl} du premier coup, en ${dur}.`;
+  $('#end-chart').innerHTML = miniLegend() + miniChart({w: 310, h: 122});
+  openSheet('end');
+}
+
+/* ───────── Entrée et sortie de la leçon ───────── */
+function openLesson() {
+  resetLesson();
+  lessonEl.classList.add('is-open'); lessonEl.inert = false; home.inert = memo.inert = true; tabbar.inert = true;
+  const t = ++run; startedAt = Date.now();
+  lesson(t).catch(e => { if (!(e instanceof Cancel)) console.error(e); });
+}
+function closeLesson() {
+  cancelRun(); closeSheet(); clearTargets();
+  lessonEl.classList.remove('is-open'); lessonEl.inert = true; tabbar.inert = false;
+  const onHome = $('.tab.is-on').dataset.tab === 'home'; home.inert = !onHome; memo.inert = onHome;
+}
+$('#start').addEventListener('click', openLesson);
+$('#replay').addEventListener('click', openLesson);
+$('#quit').addEventListener('click', () => openSheet('quit'));
+$('#quit-no').addEventListener('click', closeSheet);
+$('#quit-yes').addEventListener('click', closeLesson);
+$('#end-go').addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.toggle('is-on', x.dataset.tab === 'home')); home.classList.add('is-on'); memo.classList.remove('is-on');
+  renderHome(true);
+  $('#home-scroll').scrollTop = 0;
+  closeLesson();
+});
+
+/* ───────── Contrôle automatique : rien de coupé, rien qui déborde ───────── */
+window.__controle = function () {
+  const pb = [];
+  const cut = (el, nom) => { if (el.scrollWidth > el.clientWidth + 1) pb.push(`${nom} : texte coupé (« ${el.textContent.trim().slice(0, 30)} »)`); };
+  const inside = (el, box, nom) => { const a = el.getBoundingClientRect(), b = box.getBoundingClientRect(); if (a.width && (a.left < b.left - .5 || a.right > b.right + .5)) pb.push(`${nom} : dépasse de son cadre (« ${el.textContent.trim().slice(0, 30)} »)`); };
+  const grid = $('.tv-grid');
+  $$('#tbl th, #tbl td').forEach(c => { cut(c, 'colonne de la table'); inside(c, grid, 'colonne de la table'); });
+  $$('.well, .field, .v-title, .well-l, .pane-h, .l-steps li, .l-dead, .dock button, .tv-status, .pbi-title').forEach(e => cut(e, e.className.split(' ')[0]));
+  $$('.v-x span').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) pb.push(`étiquette de l’axe X coupée (« ${e.textContent} »)`); });
+  if (legendEl.offsetWidth) inside(legendEl, $('#page'), 'légende');
+  $$('#thread .bub.in:not(.gone) p').forEach(b => { if (b.getBoundingClientRect().top < thread.getBoundingClientRect().top - .5) pb.push(`bulle d’Idriss coupée (« ${b.textContent.slice(0, 30)} »)`); });
+  $$('.chip').forEach(c => inside(c, c.parentElement, 'champ dans une case'));
+  return pb;
+};
+
+renderHome(false);
+})();
+</script>
+</body>
+</html>
