@@ -1,13 +1,29 @@
-# Mesure
+# Power BI Quest · Opération Wonderland
 
-Apprendre Power BI en travaillant sur un vrai dossier.
-
-Aperçu : la leçon 1, « Ton premier visuel ». Premier lundi chez Magnésie, cinq salles d'escalade. La directrice des opérations veut savoir quelle salle plombe septembre avant son comité de 10 h. On ouvre la table ventes, on monte un histogramme empilé dans un Power BI simulé, on trouve la salle, puis le pourquoi.
+Une appli web pour apprendre Power BI en immersion : 60 jours pour sauver un parc d'attractions grâce à la data.
 
 Site : https://elisabhty.github.io/mesure/
 
+## Module 1 — Le bureau des nouveaux arrivants
+
+Dix missions sur la carte du parc, de « Ton premier jour » à « La première présentation ». Chaque mission contient :
+
+- une cinématique avec Victoria, Gabriel, Oscar, Lola, Camille et Pixel ;
+- une leçon interactive ;
+- huit exercices joués dans un Power BI Desktop simulé (rapport, table, modèle, Navigateur, Texte/CSV, Power Query), avec trois indices et des erreurs expliquées ;
+- 25 XP par exercice, un badge, un objet pour le bureau et huit fiches mémo à retourner.
+
+Le projet `Wonderland_Pilotage` est conservé d'une mission à l'autre : tables importées, types, formats, pages et visuels.
+
 ## Technique
 
-- Un seul fichier `index.html`, en HTML, CSS et JavaScript, sans dépendance.
-- Police Bricolage Grotesque (licence OFL, voir `fonts/OFL.txt`).
-- Contrôle intégré : `window.__controle()` dans la console renvoie la liste des colonnes, étiquettes ou bulles coupées (liste vide si tout va bien).
+HTML, CSS et JavaScript sans dépendance ni étape de build. Progression enregistrée dans le navigateur (`localStorage`, clé `pbq-module1`).
+
+- `js/core.js` : moteur (missions, cinématiques, indices, XP, récompenses, fiches)
+- `js/pbi.js` : simulateur Power BI
+- `js/kit.js` : planches d'exercice partagées
+- `js/m101.js` … `js/m110.js` : les missions
+- `js/textes.js` : indices et erreurs contextuelles
+- `img/` : illustrations générées avec ElevenLabs
+
+Police : Bricolage Grotesque (SIL Open Font License, voir `fonts/OFL.txt`). Données fictives.
