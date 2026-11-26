@@ -76,7 +76,9 @@ const def = {
         next: () => {
           if (imported(P())) return true;
           if (!pbi.q2El) return ['Ouvre l’éditeur Power Query : Accueil, Transformer les données.', ['[data-a="tab:Accueil"]', '[data-a="cmd:transform"]']];
-          return ['Dans l’éditeur, ajoute la source : Accueil, Nouvelle source, Classeur Excel. Ouvre Maintenance_Wonderland_Brut.xlsx et coche Export_Maintenance.', ['[data-q="tab:Accueil"]', '[data-q="cmd:newsource"]', '.menu [data-k="excel"]', `[data-f="${FILE}"]`, '[data-d="open"]', `[data-chk="${SHEET}"]`, '[data-d="ok"]']];
+          if (pbi.dlgKind === 'q2nav') return ['Coche Export_Maintenance, puis OK.', [`[data-chk="${SHEET}"]`, '[data-d="ok"]']];
+          if (pbi.dlgKind === 'q2open') return [`Ouvre ${FILE}.`, [`[data-f="${FILE}"]`, '[data-d="open"]']];
+          return ['Accueil › Nouvelle source › Classeur Excel.', ['[data-q="tab:Accueil"]', '[data-q="cmd:newsource"]', '.menu [data-k="excel"]']];
         },
         cmd: c => ['get', 'excel', 'csv', 'enter'].includes(c) ? x.oops('Charger au lieu de transformer') : undefined,
         tries: p => {
@@ -110,7 +112,7 @@ const def = {
           const q = Q();
           if (q.name !== NAME) return [`Renomme la requête ${NAME} : touche son nom en haut de l’éditeur, puis Renommer.`, ['.q2-qname', '.menu [data-k="ren"]']];
           if (q.load !== false) return ['Désactive son chargement : touche son nom, puis Activer le chargement pour le décocher.', ['.q2-qname', '.menu [data-k="load"]']];
-          if (q.group !== 'Maintenance') return ['Range-la dans un nouveau groupe Maintenance : touche son nom, Déplacer vers le groupe, Nouveau groupe.', ['.q2-qname', '.menu [data-k="grp"]', '.menu [data-k="g:+"]']];
+          if (q.group !== 'Maintenance') return ['Touche son nom › Déplacer vers le groupe › Nouveau groupe : Maintenance.', ['.q2-qname', '.menu [data-k="grp"]', '.menu [data-k="g:+"]']];
           return true;
         },
         tries: p => {
@@ -196,7 +198,6 @@ const def = {
         if (v.n === 1108 || v.n === 1104) return ['Ligne d’en-têtes oubliée'];
         return ['', 'Lis la ligne Nombre du profil de Column1.'];
       });
-      await K2.ask(x, 'Pourquoi profiler l’ensemble des données ?', [{ t: 'Sinon, les lignes au-delà de la millième, comme le bas du fichier, échappent au profil', ok: true }, { t: 'Pour que Power Query corrige les erreurs', err: 'Valide confondu avec exact', msg: 'Le profil mesure sans rien corriger.' }, { t: 'Pour charger la requête dans le modèle', msg: 'Le profil ne charge rien : il décrit les colonnes.' }]);
       await x.ok('1 109 lignes, toutes lues. Le haut des colonnes montre Valide, Erreur et Vide, la distribution compte les valeurs distinctes et uniques.');
     } },
 
@@ -230,7 +231,7 @@ const def = {
       x.app('tri201', B.el);
       const SOL = { l1: 'ctx', l5: 'ctx', l6: 'hdr', l7: 'int', l507: 'par', l1108: 'par' };
       const ERR = { l1: 'Titre pris pour un en-tête', l5: 'Ligne vide prise pour une donnée', l6: 'En-têtes pris pour une donnée', l7: 'Intervention écartée', l507: 'Commentaire pris pour une intervention', l1108: 'Total pris pour une intervention' };
-      x.todo('Classe chaque ligne : contexte, en-têtes, donnée ou ligne parasite glissée parmi les données.');
+      x.todo('Classe chaque ligne : contexte, en-têtes, donnée ou ligne parasite.');
       await x.wait({ 'k2.pick': () => {}, 'k2.check': ({ values }) => {
         const bad = Object.keys(SOL).filter(k => values[k] !== SOL[k]);
         B.mark(bad);
@@ -277,7 +278,7 @@ const def = {
       await K2.work(x, {
         cur: NAME,
         next: () => {
-          if (!col9) return ['Ouvre le menu de filtre de Column9, la colonne des coûts HT, et repère ce qui n’est pas un nombre.', ['[data-q="flt:Column9"]']];
+          if (!col9) return ['Ouvre le filtre de Column9 (coûts HT) et repère ce qui n’est pas un nombre.', ['[data-q="flt:Column9"]']];
           if (!shut) return ['Parcours la liste, puis ferme le filtre avec Annuler.', ['[data-d="cancel"]']];
           return true;
         },

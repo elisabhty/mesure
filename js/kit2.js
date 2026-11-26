@@ -164,6 +164,37 @@ K2.renameRule = (x, p, targets) => {
   if (p.name !== want.name) return x.oops('', `Écris exactement ${want.name}.`);
   return true;
 };
+/* Import CSV guidé pas à pas : origine, délimiteur, détection des types, puis OK */
+K2.csvTodo = (x, want = {}) => {
+  const w = Object.assign({ enc: 65001, delim: ';', detect: 'none' }, want), c = x.pbi.q2cst || {};
+  if (c.enc !== w.enc) return ['Origine du fichier : 65001 : Unicode (UTF-8).', ['[data-x="enc"]', `.menu [data-k="${w.enc}"]`]];
+  if (c.delim !== w.delim) return ['Délimiteur : Point-virgule.', ['[data-x="delim"]', `.menu [data-k="${w.delim}"]`]];
+  if (c.detect !== w.detect) return ['Détection du type de données : Ne pas détecter.', ['[data-x="detect"]', `.menu [data-k="${w.detect}"]`]];
+  return ['Valide avec OK.', ['[data-d="ok"]']];
+};
+/* Regrouper par, pas à pas. want = { col, tab, keys:[…], aggs:[{ as, op, col }] } */
+const AGGN = { count: 'Nombre de lignes', countd: 'Nombre de lignes distinctes', sum: 'Somme', avg: 'Moyenne', min: 'Minimum', max: 'Maximum', all: 'Toutes les lignes' };
+K2.groupTodo = (x, want) => {
+  const pbi = x.pbi, tab = want.tab || 'Transformer', sel = (pbi.q2 && pbi.q2.sel) || [];
+  if (pbi.dlgKind !== 'q2group') {
+    if (want.col && !(sel.length === 1 && sel[0] === want.col)) return [`Touche l’en-tête de ${want.col}.`, [`[data-q="hd:${want.col}"]`]];
+    return [`${tab} › Regrouper par.`, [`[data-q="tab:${tab}"]`, '[data-q="cmd:group"]']];
+  }
+  const g = pbi.q2gst || { keys: [], aggs: [] }, adv = want.keys.length > 1 || want.aggs.length > 1;
+  if (adv && !g.adv) return ['Choisis Avancé.', ['input[name="gm"][value="a"]']];
+  for (let i = 0; i < want.keys.length; i++) {
+    if (g.keys.length <= i) return [`Ajouter un regroupement, puis ${want.keys[i]}.`, ['.q2-gk .chipb']];
+    if (g.keys[i] !== want.keys[i]) return [`Regrouper par : ${want.keys[i]}.`, ['.q2-gk .sel-box']];
+  }
+  for (let i = 0; i < want.aggs.length; i++) {
+    const w = want.aggs[i], a = g.aggs[i];
+    if (!a) return ['Ajouter une agrégation.', ['.q2-ga .chipb']];
+    if ((a.as || '').trim() !== w.as) return [`Nouveau nom de colonne : ${w.as}.`, ['.q2-agg input']];
+    if (a.op !== w.op) return [`Opération : ${AGGN[w.op] || w.op}.`, ['.q2-agg [data-k="op"]']];
+    if (w.col && a.col !== w.col) return [`Colonne : ${w.col}.`, ['.q2-agg [data-k="col"]']];
+  }
+  return ['Valide avec OK.', ['[data-d="ok"]']];
+};
 /* Ouvre l'éditeur sur une requête (reprise d'exercice) */
 K2.open = (x, cur) => {
   const pbi = x.pbi; x.app('pbi'); pbi.closeDialog(true);
@@ -198,6 +229,10 @@ K2.baseTry = (x, p, o) => {
 K2.work = async function (x, o) {
   const pbi = x.pbi, P = () => pbi.P;
   o._new = [];
+  /* Un éditeur détaché par un nouveau rendu du rapport compte comme fermé */
+  if (pbi.q2El && !pbi.q2El.isConnected) pbi.closeQ2(true);
+  /* Power Query s'ouvre directement quand l'étape se fait dans l'éditeur */
+  if ((o.open !== undefined ? o.open : o.editor !== false) && !pbi.q2El) K2.open(x, typeof o.cur === 'function' ? o.cur() : o.cur);
   const evalNow = () => {
     if (o.editor !== false && !pbi.q2El) { x.todo('Rouvre l’éditeur Power Query : Accueil, Transformer les données.'); x.guide(['[data-a="tab:Accueil"]', '[data-a="cmd:transform"]']); return; }
     const r = o.next();
@@ -284,7 +319,7 @@ K2.branch = async function (x, o) {
   const e = o.errs || {};
   let deps = !o.deps, depsOpen = false;
   await K2.work(x, {
-    cur: o.src, editor: false, wrongQuery: e.edit || '',
+    cur: o.src, editor: false, open: true, wrongQuery: e.edit || '',
     next: () => {
       const s = S();
       if (!pbi.q2El) return ['Ouvre l’éditeur Power Query : Accueil, Transformer les données.', ['[data-a="tab:Accueil"]', '[data-a="cmd:transform"]']];
@@ -325,6 +360,16 @@ K2.branch = async function (x, o) {
 
 /* ───────── Colonne personnalisée validée sur son résultat ───────── */
 const TYN = { text: 'Texte', bool: 'Vrai/Faux', int: 'Nombre entier', dec: 'Nombre décimal', fixed: 'Nombre décimal fixe', date: 'Date', any: 'Tout' };
+/* Colonne personnalisée, pas à pas : ruban, nom, type, formule collée, OK */
+K2.customTodo = (x, col, type) => {
+  const pbi = x.pbi;
+  if (pbi.dlgKind !== 'q2custom') return ['Ajouter une colonne › Colonne personnalisée.', ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:custom"]']];
+  const c = pbi.q2cust || {};
+  if (c.name !== col) return [`Nouveau nom de colonne : ${col}.`, ['[data-x="n"]']];
+  if (c.type !== type) return [`Type de données : ${TYN[type]}.`, ['[data-x="t"]', `.menu [data-k="${type}"]`]];
+  if (!c.src) return ['Touche Coller pour placer la formule.', ['[data-x="paste"]']];
+  return ['Valide avec OK.', ['[data-d="ok"]']];
+};
 K2.custom = async function (x, o) {
   const pbi = x.pbi, Q = () => K2.q(x, o.q);
   const has = () => { const T = K2.T(x, o.q); return K2.cols(T).includes(o.col); };
@@ -333,7 +378,7 @@ K2.custom = async function (x, o) {
     cur: o.q, edit: [o.q], ops: ['custom'],
     next: () => {
       if (!K2.shown(x, o.q)) return K2.showTodo(x, o.q);
-      if (!has()) return [`Ajouter une colonne › Colonne personnalisée. Nom : ${o.col}, type : ${TYN[o.type]}, puis touche Coller dans la formule.`, ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:custom"]', '[data-x="n"]', '[data-x="t"]', '[data-x="paste"]', '[data-d="ok"]']];
+      if (!has()) return K2.customTodo(x, o.col, o.type);
       return true;
     },
     tries: p => {
@@ -359,7 +404,7 @@ K2.prof = (x, qn, col, todo) => K2.work(x, {
     const s = x.pbi.q2, T = K2.T(x, qn);
     if (!K2.shown(x, qn)) return K2.showTodo(x, qn);
     if (s.qd) return ['Ferme le volet Requêtes pour retrouver l’aperçu.', ['[data-q="qdx"]']];
-    if (s.scope !== 'all' && T && T.rows.length > 1000) return ['Passe le profilage sur l’ensemble des données : touche la barre d’état, puis l’ensemble du jeu de données.', ['[data-q="scope"]', '.menu [data-k="all"]']];
+    if (s.scope !== 'all' && T && T.rows.length > 1000) return ['Barre d’état : profilage sur l’ensemble des données.', ['[data-q="scope"]', '.menu [data-k="all"]']];
     if (!(s.prof && s.sel.length === 1 && s.sel[0] === col)) return [todo || `Affiche le profil de ${col} : sélectionne la colonne, puis Affichage › Profil de colonne.`, s.prof ? [`[data-q="hd:${col}"]`] : [`[data-q="hd:${col}"]`, '[data-q="tab:Affichage"]', '[data-q="cmd:prof"]']];
     return true;
   },
@@ -375,8 +420,9 @@ K2.types = (x, o) => {
   const pick = (cols, multi, sel) => {
     if (cols.length === 1) {
       const c = cols[0];
+      if (sel.length === 1 && sel[0] === c) return { say: `Touche l’en-tête de ${c}`, t: [] };
       if (multi) return { say: `Désactive la sélection multiple (Accueil), puis touche ${c}`, t: MULTI.concat([hd(c)]) };
-      return { say: `Touche l’en-tête de ${c}`, t: sel.length === 1 && sel[0] === c ? [] : [hd(c)] };
+      return { say: `Touche l’en-tête de ${c}`, t: [hd(c)] };
     }
     const extra = sel.filter(c => !cols.includes(c)), miss = cols.filter(c => !(multi && sel.includes(c)));
     return { say: `${multi ? 'En sélection multiple' : 'Active la sélection multiple (Accueil)'}, touche ${cols.join(', ')}${extra.length ? `, et retire ${extra.join(', ')} de la sélection` : ''}`, t: (multi ? [] : MULTI).concat(extra.map(hd), miss.map(hd)) };
@@ -390,8 +436,15 @@ K2.types = (x, o) => {
         const left = cols.filter(c => ty(c) !== t);
         if (!left.length) continue;
         const k = pick(left, multi, sel), ribbon = ['[data-q="tab:Transformer"]', '[data-q="cmd:type"]'];
-        if (!loc) return [`${k.say}, puis Transformer › Type de données › ${TYN[t]}.`, k.t.concat(ribbon, [`.menu [data-k="${t}"]`])];
-        return [`${k.say}, puis Transformer › Type de données › Utiliser les paramètres régionaux… : ${TYN[t]}, ${LOC[loc]}.`, k.t.concat(ribbon, ['.menu [data-k="locale"]', '[data-x="t"]', `.menu [data-k="${t}"]`, '[data-x="l"]', `.menu [data-k="${loc}"]`, '[data-d="ok"]'])];
+        if (pbi.dlgKind === 'q2locale' && loc) {
+          const d = pbi.q2lst || {};
+          if (d.type !== t) return [`Type de données : ${TYN[t]}.`, ['[data-x="t"]', `.menu [data-k="${t}"]`]];
+          if (d.loc !== loc) return [`Paramètres régionaux : ${LOC[loc]}.`, ['[data-x="l"]', `.menu [data-k="${loc}"]`]];
+          return ['Valide avec OK.', ['[data-d="ok"]']];
+        }
+        if (k.t.length) return [`${k.say}.`, k.t];
+        if (!loc) return [`Transformer › Type de données › ${TYN[t]}.`, ribbon.concat([`.menu [data-k="${t}"]`])];
+        return ['Transformer › Type de données › Utiliser les paramètres régionaux…', ribbon.concat(['.menu [data-k="locale"]'])];
       }
       return true;
     },

@@ -71,14 +71,14 @@ const def = {
       await x.pixel('Crée une référence de la requête brute, puis règle-la comme une préparation d’atelier.');
       let deps = false, depsOpen = false;
       await K2.work(x, {
-        cur: BRUT, editor: false,
+        cur: BRUT, editor: false, open: true,
         next: () => {
           const s = S();
           if (!pbi.q2El) return ['Ouvre l’éditeur Power Query : Accueil, Transformer les données.', ['[data-a="tab:Accueil"]', '[data-a="cmd:transform"]']];
           if (!s) return [`Volet Requêtes : touche ⋯ à côté de ${BRUT}, puis Référence.`, ['[data-q="qd"]', K2.qmenu(x, brut()), '.menu [data-k="ref"]']];
           if (s.name !== NAME) return [`Renomme la nouvelle requête ${NAME} : touche son nom en haut, puis Renommer.`, ['.q2-qname', '.menu [data-k="ren"]', '.dlg input', '[data-d="ok"]']];
           if (s.load !== false) return ['Désactive son chargement : touche son nom, puis Activer le chargement.', ['.q2-qname', '.menu [data-k="load"]']];
-          if (!deps && depsOpen) return ['Observe le schéma : la nouvelle requête part de la requête brute, qui lit le classeur. Ferme-le ensuite.', ['[data-d="close"]']];
+          if (!deps && depsOpen) return ['Regarde d’où part la nouvelle requête, puis ferme le schéma.', ['[data-d="close"]']];
           if (!deps) return ['Vérifie le lien entre les deux requêtes : Affichage › Dépendances de requête.', ['[data-q="tab:Affichage"]', '[data-q="cmd:deps"]']];
           return true;
         },
@@ -146,7 +146,7 @@ const def = {
         next: () => {
           const q = Q(), i = stepIdx(q, s => s.op === 'skip');
           if (!K2.shown(x, NAME)) return K2.showTodo(x, NAME);
-          if (i < 0) return ['Accueil › Supprimer les lignes › Supprimer les premières lignes. Combien de lignes avant les vrais en-têtes ?', ['[data-q="tab:Accueil"]', '[data-q="cmd:rmrows"]', '.menu [data-k="top"]']];
+          if (i < 0) return ['Accueil › Supprimer les lignes › Supprimer les premières lignes.', ['[data-q="tab:Accueil"]', '[data-q="cmd:rmrows"]', '.menu [data-k="top"]']];
           if (q.steps[i].name !== 'Contexte_Retire') return K2.stepTodo(q, i, 'Contexte_Retire');
           return true;
         },
@@ -176,7 +176,7 @@ const def = {
           const q = Q(), T = K2.T(x, NAME), pi = stepIdx(q, s => s.op === 'promote'), ti = stepIdx(q, s => s.op === 'type');
           if (!K2.shown(x, NAME)) return K2.showTodo(x, NAME);
           if (pi < 0) return ['Accueil › Utiliser la première ligne pour les en-têtes.', ['[data-q="tab:Accueil"]', '[data-q="cmd:promote"]', '.menu [data-k="promote"]']];
-          if (ti >= 0) return ['Power Query a ajouté une étape Type modifié. Les valeurs hétérogènes seront diagnostiquées plus tard : supprime cette étape.', ['[data-q="steps"]', `[data-q="stx:${ti}"]`, '[data-d="del"]']];
+          if (ti >= 0) return ['Supprime l’étape Type modifié ajoutée par Power Query.', ['[data-q="steps"]', `[data-q="stx:${ti}"]`, '[data-d="del"]']];
           if (K2.cols(T).includes('6')) return K2.colTodo('6', 'Ligne_Source');
           if (q.steps[pi].name !== 'Entetes_Promus') return K2.stepTodo(q, pi, 'Entetes_Promus');
           return true;
@@ -247,7 +247,7 @@ const def = {
         next: () => {
           const q = Q(), i = stepIdx(q, s => s.op === 'filter' && s.cond.values && s.cond.values.includes('FIN EXPORT'));
           if (!K2.shown(x, NAME)) return K2.showTodo(x, NAME);
-          if (i < 0) return ['Filtre de ID_Intervention : touche Charger plus, cherche TOTAL puis FIN dans la zone Rechercher, et décoche les deux marqueurs.', ['[data-q="flt:ID_Intervention"]', '[data-more]', '.q2-search', '[data-d="ok"]']];
+          if (i < 0) return ['Filtre de ID_Intervention : Charger plus, puis décoche TOTAL et FIN.', ['[data-q="flt:ID_Intervention"]', '[data-more]', '.q2-search', '[data-d="ok"]']];
           if (q.steps[i].name !== 'Pied_Export_Retire') return K2.stepTodo(q, i, 'Pied_Export_Retire');
           return true;
         },
@@ -303,8 +303,6 @@ const def = {
       });
       await x.pixel('1 100 lignes, mais 1 098 identifiants : M0899 et M0949 apparaissent toujours deux fois. Vérifions deux valeurs douteuses dans l’aperçu.');
       await K2.ask(x, 'Quelle est la Date_Demande de M0040, 40e ligne de l’aperçu ?', [{ t: '31/02/2026, toujours là', ok: true }, { t: '28/02/2026', err: 'Dates impossibles remplacées' }, { t: 'null', err: 'Dates impossibles remplacées' }]);
-      await K2.ask(x, 'Et le technicien de M0012, 12e ligne ?', [{ t: 'null, comme dans le fichier reçu', ok: true }, { t: '0', err: 'Null remplacés par zéro' }, { t: 'A. Martin', msg: 'Rien n’a été complété : regarde la colonne Technicien de M0012.' }]);
-      await K2.ask(x, 'La colonne Date_Demande ne contient aucune erreur. Ses dates sont donc toutes valides ?', [{ t: 'Non : un texte lisible peut être une date impossible', ok: true }, { t: 'Oui, la qualité affiche 100 % valide', err: 'Qualité technique présentée comme validation métier' }]);
       await x.ok('La structure est propre, et toutes les anomalies de contenu sont encore là : dates impossibles, montants textuels, null, répétitions. Elles seront traitées une par une.');
     } },
 

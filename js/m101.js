@@ -181,7 +181,7 @@ const def = {
     { async run(x) {
       demo(x, x.pbi.P.demo ? null : 'model');
       await x.pixel('Avant de construire notre propre rapport, je vais te montrer un exemple.');
-      x.todo('Retrouve l’espace où les graphiques sont créés, puis sélectionne le graphique de fréquentation.');
+      x.todo('Va là où se créent les graphiques, puis sélectionne celui de la fréquentation.');
       x.guide('[data-a="view:report"]');
       const inReport = () => x.pbi.st.view === 'report';
       if (inReport()) x.guide('[data-a="vis:vis_demo_frequentation"]');

@@ -45,7 +45,7 @@ const seeProfile = (x, col, todo) => K2.work(x, {
   next: () => {
     const s = x.pbi.q2;
     if (!K2.shown(x, NAME)) return K2.showTodo(x, NAME);
-    if (s.scope !== 'all') return ['Passe le profilage sur l’ensemble des données : touche la barre d’état, puis l’ensemble du jeu de données.', ['[data-q="scope"]', '.menu [data-k="all"]']];
+    if (s.scope !== 'all') return ['Barre d’état : profilage sur l’ensemble des données.', ['[data-q="scope"]', '.menu [data-k="all"]']];
     if (!(s.prof && s.sel.length === 1 && s.sel[0] === col)) return [todo || `Affiche le profil de ${col} : sélectionne la colonne, puis Affichage › Profil de colonne.`, s.prof ? [`[data-q="hd:${col}"]`] : [`[data-q="hd:${col}"]`, '[data-q="tab:Affichage"]', '[data-q="cmd:prof"]']];
     return true;
   },
@@ -64,8 +64,8 @@ async function lireColonne(x, src) {
     next: () => {
       if (!K2.shown(x, NAME)) return K2.showTodo(x, NAME);
       const c = cols();
-      if (!c.includes(PAR) && !c.includes(DIAG) && !dateCol()) return [`Ajouter une colonne › Appeler une fonction personnalisée. Nom : ${DIAG}, fonction ${FN}, Valeur : colonne ${RAW}.`, ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:invoke"]', '[data-x="n"]', '[data-p="0"]', '[data-d="ok"]']];
-      if (c.includes(DIAG)) return [`Touche l’icône à double flèche de l’en-tête ${DIAG}. Garde Date et Controle, décoche le préfixe, puis OK.`, [`[data-q="exp:${DIAG}"]`, '[data-x="prefix"]', '[data-d="ok"]']];
+      if (!c.includes(PAR) && !c.includes(DIAG) && !dateCol()) return x.pbi.dlgKind === 'q2invoke' ? [`Nom : ${DIAG}, fonction ${FN}, Valeur : colonne ${RAW}, puis OK.`, ['[data-x="n"]', '[data-p="0"]', '[data-d="ok"]']] : ['Ajouter une colonne › Appeler une fonction personnalisée.', ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:invoke"]']];
+      if (c.includes(DIAG)) return x.pbi.dlgKind === 'q2expand' ? ['Garde Date et Controle, décoche le préfixe, puis OK.', ['[data-x="prefix"]', '[data-d="ok"]']] : [`Touche la double flèche de l’en-tête ${DIAG}.`, [`[data-q="exp:${DIAG}"]`]];
       if (dateCol()) return K2.colTodo(dateCol(), PAR);
       if (ctlCol()) return K2.colTodo(ctlCol(), CTL);
       if (ty(PAR) !== 'date') return [`Type de ${PAR} : touche l’icône de type de son en-tête, puis Date.`, [`[data-q="ty:${PAR}"]`, '.menu [data-k="date"]']];
@@ -198,7 +198,7 @@ const def = {
           if (!t) return [`Volet Requêtes : ⋯ à côté de ${NAME}, puis Référence.`, ['[data-q="qd"]', K2.qmenu(x, D()), '.menu [data-k="ref"]']];
           if (t.load !== false) return ['Désactive le chargement de cette vue temporaire.', ['.q2-qname', '.menu [data-k="load"]']];
           if (!K2.shown(x, t.name)) return K2.showTodo(x, t.name);
-          if (!t.steps.some(s => s.op === 'filter')) return ['Filtre ID_Intervention : décoche (Sélectionner tout), puis coche M0055, M0550 et M0650 avec la recherche.', ['[data-q="flt:ID_Intervention"]', '[data-all]', '.q2-search', '[data-d="ok"]']];
+          if (!t.steps.some(s => s.op === 'filter')) return ['Filtre ID_Intervention : garde seulement M0055, M0550 et M0650.', ['[data-q="flt:ID_Intervention"]', '[data-all]', '.q2-search', '[data-d="ok"]']];
           return true;
         },
         tries: p => {
@@ -232,7 +232,6 @@ const def = {
       x.app('pbi');
       await K2.ask(x, 'Selon le contrat, que désigne 03/04/2026 pour M0650 ?', [{ t: 'Le 3 avril 2026', ok: true }, { t: 'Le 4 mars 2026', err: 'M0650 déclaré certain au 4 mars' }, { t: 'Le 3 mai 2026, puisque l’export couvre mai', err: 'Correction de l’année pour entrer dans la période', msg: 'Ne fabrique pas une date pour satisfaire le périmètre.' }]);
       await K2.ask(x, 'Et 12/31/2026 pour M0550 ?', [{ t: 'Un format non accepté, à faire confirmer', ok: true }, { t: 'Le 31 décembre : lisons tout le fichier en américain', err: 'Toutes les dates lues en américain' }, { t: 'Essayer en-US pour cette ligne, puisque ça marche', err: 'Plusieurs cultures essayées sans règle' }]);
-      await K2.ask(x, 'Pourquoi écrire le format et la culture dans la conversion ?', [{ t: 'Pour obtenir la même lecture sur n’importe quel poste', ok: true }, { t: 'Inutile : Power BI prend la langue de l’ordinateur', err: 'Culture de l’ordinateur utilisée implicitement' }]);
       await x.ok('Le contrat décide : 03/04/2026 est le 3 avril, même si la période posera problème. 12/31/2026 reste une valeur à confirmer, sans conversion de complaisance.');
     }, avance: EX2 },
 
@@ -300,7 +299,6 @@ const def = {
       await seeProfile(x, 'Controle_Date_Demande');
       await K2.num(x, 'Combien de demandes sont classées Date invalide ?', [{ id: 'n', label: 'Date invalide' }], v => v.n === 2 ? true : ['', 'Le profil liste chaque état avec son nombre de lignes : lis la ligne Date invalide.']);
       await K2.ask(x, 'Que signifie le null de Date_Demande_Parsee pour ces deux demandes ?', [{ t: 'Une conversion non disponible, expliquée par Controle_Date_Demande', ok: true }, { t: 'Aucune demande ce jour-là', err: 'Null technique assimilé à coût ou événement nul' }, { t: 'Une date à remplacer par la plus proche', err: 'Date impossible déplacée automatiquement' }]);
-      await K2.ask(x, 'M0055 est classé Valide ISO. Sa date est-elle validée ?', [{ t: 'Non : la lecture réussit, la période et la chronologie restent à contrôler', ok: true }, { t: 'Oui, la conversion a réussi', err: 'Réussite de lecture présentée comme validation finale' }]);
       await x.ok('Quatre colonnes ajoutées, 23 en tout : deux dates converties, deux contrôles. Deux dates invalides, une ISO lue, un format non accepté — et aucun texte reçu modifié.');
     }, avance: EX3 },
 
@@ -330,7 +328,6 @@ const def = {
       await K2.num(x, 'Relève la position source de chaque dossier.', [{ id: 'a', label: 'Ligne_Source · M0040' }, { id: 'b', label: 'Ligne_Source · M1005' }], v => v.a === 46 && v.b === 1012 ? true : v.a === 1012 ? ['', 'Associe chaque identifiant à sa propre ligne.'] : ['', 'Lis la colonne Ligne_Source de chaque ligne filtrée.']);
       await K2.ask(x, 'Quelle anomalie est certaine pour ces deux dates ?', [{ t: 'Des jours inexistants : le 31 février, et un 29 février en 2026', ok: true }, { t: 'Une simple question de format', err: 'Anomalie classée simple question de format' }]);
       await K2.ask(x, 'Que faire pour 31/02/2026 ?', [{ t: 'Demander la date de demande sur la pièce d’origine', ok: true }, { t: 'La remplacer par le 28 février', err: '31 février remplacé par 28 février' }, { t: 'La reporter au 3 mars', err: '31 février remplacé par 3 mars' }, { t: 'Reprendre la date d’intervention', err: 'Date d’intervention copiée dans Date_Demande' }]);
-      await K2.ask(x, 'Et pour 29/02/2026 ?', [{ t: 'Demander la pièce d’origine et vérifier l’année', ok: true }, { t: 'Passer en 2024, qui a un 29 février', err: '2026 changé en 2024' }, { t: 'Mettre la date du jour', err: 'Date du jour utilisée' }]);
       await x.pixel('La loupe a servi. Retire le filtre : la préparation doit garder ses 1 099 lignes.');
       await K2.work(x, {
         cur: NAME, edit: [NAME],
@@ -347,7 +344,7 @@ const def = {
       });
       EX4(pbi.P);
       x.app('reg205', K.lesson('Registre d’investigation', 'Deux jours inexistants', `${regCard(pbi.P.regDates.filter(d => ['M0040', 'M1005'].includes(d.id)))}<p class="lc-note">${esc(fr('Responsable de confirmation : Oscar. Aucune confirmation n’est encore fournie.'))}</p>`));
-      await K2.ask(x, 'Ces deux dossiers sont-ils résolus ?', [{ t: 'Non : l’erreur est identifiée, la correction reste à obtenir', ok: true }, { t: 'Oui, ils sont documentés', err: 'Dossier marqué résolu sans pièce' }]);
+      await x.pixel('Ils entrent au registre : l’erreur est identifiée, la correction reste à obtenir.');
       x.app('pbi');
       await x.ok('Deux dates impossibles, documentées avec leur ligne source. Aucune n’est corrigée par supposition, et la préparation garde ses 1 099 lignes.');
     }, avance: EX4 },
@@ -361,14 +358,11 @@ const def = {
       await x.pixel('fn_LireDate compare déjà chaque date convertie à ces bornes. Vérifions sur les valeurs : le profil d’une colonne Date donne son minimum et son maximum.');
       await seeProfile(x, 'Date_Demande_Parsee');
       await K2.ask(x, 'Que révèle le minimum de Date_Demande_Parsee ?', [{ t: 'Le 03/04/2026 : une date lue, mais antérieure au 1er mai', ok: true }, { t: 'Rien d’anormal : la date existe, elle compte pour mai', err: '3 avril accepté dans l’analyse de mai' }]);
-      await K2.ask(x, 'Pourquoi lire ce minimum sur Date_Demande_Parsee plutôt que sur Date_Demande ?', [{ t: 'Date_Demande est un texte : 03/04/2026 s’y classerait parmi les 03 de mai', ok: true }, { t: 'Les deux colonnes donnent le même minimum', err: 'Comparaison lexicographique des textes' }]);
       await seeProfile(x, 'Controle_Date_Demande');
       await K2.num(x, 'Combien de demandes sont hors période ?', [{ id: 'n', label: 'Hors période' }], v => v.n === 1 ? true : ['', 'Lis la ligne Hors période dans le profil de Controle_Date_Demande.']);
       await seeProfile(x, 'Controle_Date_Intervention');
       await K2.num(x, 'Et côté interventions ?', [{ id: 'f', label: 'Format non accepté' }, { id: 'h', label: 'Hors période' }], v => v.f === 1 && v.h === 0 ? true : v.h === 1 ? ['M0550 converti en américain puis validé', 'M0550 n’est pas converti : il reste dans sa propre catégorie, Format non accepté.'] : ['', 'Lis les états listés dans le profil de Controle_Date_Intervention.']);
       await K2.ask(x, 'M0650 : que faire de sa demande du 3 avril ?', [{ t: 'La garder et confirmer le mois et la convention du poste source', ok: true }, { t: 'Changer le mois en mai', err: 'Mois automatiquement changé en mai' }, { t: 'Filtrer les dates hors période', err: 'Filtre supprimant toutes les dates hors période' }, { t: 'La déclarer fictive', err: 'Hors période assimilé à événement fictif' }]);
-      await K2.ask(x, 'M0550 : une lecture américaine donnerait le 31/12/2026. On l’adopte ?', [{ t: 'Non : elle reste Format non accepté, et serait de toute façon hors mai', ok: true }, { t: 'Oui, puisqu’elle se convertit', err: 'M0550 converti en américain puis validé' }]);
-      await K2.ask(x, 'Une date non convertie, à null, appartient-elle à mai ?', [{ t: 'On ne peut pas le dire : son appartenance n’est pas établie', ok: true }, { t: 'Oui, rien ne la place hors des bornes', err: 'Valeurs null considérées dans la période' }]);
       await x.ok('Une demande hors période, M0650 ; un format non accepté, M0550, rangé à part. Le contrôle de période ne juge que les dates effectivement converties.');
     } },
 
@@ -395,7 +389,6 @@ const def = {
       await K2.ask(x, 'M0055 avait seulement un format différent. Est-il résolu ?', [{ t: 'Non : son format est lisible, sa chronologie reste à investiguer', ok: true }, { t: 'Oui, sa date ISO est convertie', err: 'M0055 déclaré entièrement résolu' }]);
       await K2.ask(x, 'Que conclure pour M0120 ?', [{ t: 'Un ordre inhabituel à vérifier sur les bons', ok: true }, { t: 'Il faut permuter ses deux dates', err: 'Dates permutées automatiquement' }, { t: 'C’est une fraude', err: 'Anomalie assimilée à fraude' }]);
       await x.say('oscar', 'Une demande saisie tardivement après une urgence pourrait expliquer un ordre inhabituel. Mais nous devons le vérifier sur les bons.');
-      await K2.ask(x, 'Ordre compatible garantit-il que les deux dates sont exactes ?', [{ t: 'Non : le test contrôle seulement leur ordre', ok: true }, { t: 'Oui', err: 'Ordre compatible assimilé à date certifiée' }]);
       await x.ok('Deux chronologies inversées, M0055 et M0120 ; trois ordres non évaluables, faute de deux dates converties. Aucune date permutée.');
     }, avance: EX6 },
 
@@ -438,8 +431,6 @@ const def = {
         return ['', 'M0040, M0550 et M1005 ont une date qui ne se convertit pas : lis leurs contrôles.'];
       });
       await K2.ask(x, 'M0550 n’a pas de date d’intervention convertie. Reste-t-il dans la liste ?', [{ t: 'Oui : son état de lecture impose une investigation', ok: true }, { t: 'Non, il n’est pas évaluable', err: 'M0550 ignoré parce que non convertible' }]);
-      await K2.ask(x, 'Le nombre de dossiers est-il toujours la somme des contrôles échoués ?', [{ t: 'Non : une ligne peut échouer à plusieurs contrôles. Ici, les six causes touchent six lignes différentes', ok: true }, { t: 'Oui, il suffit d’additionner', err: 'Comptage automatique par addition des erreurs' }]);
-      await K2.ask(x, 'Et les sept dossiers incomplets de la mission 203 ?', [{ t: 'Une autre liste, toujours ouverte', ok: true }, { t: 'Réglés : leur chronologie est compatible', err: 'Dossiers incomplets considérés résolus' }]);
       EX7r(P());
       await x.ok('Six dossiers, un par ligne : deux dates impossibles, un format non accepté, une demande hors période, deux chronologies inversées. La préparation garde ses 1 099 lignes.');
     }, avance: P => { EX7(P); EX7r(P); } },
@@ -453,7 +444,6 @@ const def = {
       await x.say('victoria', 'C’est précisément ce que le registre doit montrer.');
       await x.pixel('Nous conservons cet état, sans publier d’analyse temporelle prématurée. Contrôle d’abord la préparation.');
       await K2.num(x, 'État de prep_Maintenance_Dates.', [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 1099 && v.c === 25 ? true : v.l < 1099 ? ['Volume réduit après suppression des erreurs'] : ['', '19 colonnes héritées et 6 ajoutées ; les lignes restent celles de la mission 204.']);
-      await K2.num(x, 'Les acquis de la mission 204 tiennent-ils ?', [{ id: 'a', label: 'Lignes M0899' }, { id: 'b', label: 'Lignes M0949' }], v => v.a === 1 && v.b === 2 ? true : v.a === 2 ? ['M0899 revenu en double'] : v.b === 1 ? ['M0949 réduit à une ligne'] : ['', 'Une copie retirée pour M0899, deux interventions conservées pour M0949.']);
       x.app('reg205b', K.lesson('Registre d’investigation', 'Six dossiers temporels ouverts', `${regCard(P().regDates)}<p class="lc-note">${esc(fr('Le registre est enregistré dans le projet. Les vues temporaires peuvent disparaître.'))}</p>`));
       await K2.ask(x, 'Victoria : « Pouvons-nous maintenant calculer les délais moyens d’intervention de mai ? »', [{ t: 'Pas encore un délai global : il faut définir quelles lignes y contribuent et expliquer les exclusions', ok: true }, { t: 'Oui, toutes les dates sont prêtes', err: 'Dates incertaines présentées comme certifiées' }]);
       x.app('pbi'); K2.open(x, NAME);

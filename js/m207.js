@@ -84,7 +84,6 @@ const def = {
         return v.l === 1099 && v.c === 25 && v.d === 6 ? true : ['', 'Nombre et Distinct se lisent dans le profil ; les colonnes, dans la barre d’état.'];
       });
       await K2.ask(x, 'Combien d’attractions réelles derrière ces six valeurs ?', [{ t: 'Quatre, plus une absence : « dragon » et Dragon désignent le même équipement', ok: true }, { t: 'Six', msg: 'Regarde la distribution : une écriture de Dragon entourée d’espaces, et une valeur null.' }]);
-      await K2.ask(x, 'Où ranger les libellés harmonisés ?', [{ t: 'Dans de nouvelles colonnes, à côté des sources', ok: true }, { t: 'En renommant les colonnes sources', err: 'Colonnes sources renommées en colonnes normalisées' }]);
       await x.ok('1 099 lignes, 25 colonnes : la mission 205 est intacte. Attraction, Statut et Type_Maintenance restent tels quels ; les versions normalisées viendront à côté.');
     }, avance: EX1 },
 
@@ -96,7 +95,7 @@ const def = {
       await x.pixel('Le contenu de M0150 est « dragon » entouré d’espaces. Préparons une clé technique pour comparer les écritures, dans une vue temporaire : nettoyer, retirer les espaces aux extrémités, passer en minuscules.');
       await x.formula(K2.F.cle, 'Formule · Cle_Attraction');
       await K2.tmp(x, { src: LIB, flag: 'tmp207', kind: 'cle', ops: ['custom'],
-        next: t => K2.cols(K2.T(x, t.name)).includes('Cle_Attraction') ? true : ['Ajouter une colonne › Colonne personnalisée. Nom : Cle_Attraction, type : Texte, puis touche Coller dans la formule.', ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:custom"]', '[data-x="n"]', '[data-x="t"]', '[data-x="paste"]', '[data-d="ok"]']],
+        next: t => K2.cols(K2.T(x, t.name)).includes('Cle_Attraction') ? true : K2.customTodo(x, 'Cle_Attraction', 'text'),
         tries: (p, t) => {
           if (p.kind === 'custom' && p.syntax === false) return x.oops('', 'La formule contient une erreur de syntaxe : touche Coller pour reprendre la formule.');
           if (p.kind === 'add' && p.op === 'fmt') return x.oops('Source écrasée');
@@ -117,7 +116,6 @@ const def = {
       await K2.prof(x, T1().name, 'Cle_Attraction');
       await K2.num(x, 'Combien de valeurs distinctes dans Cle_Attraction ?', [{ id: 'd', label: 'Distinct' }], v => v.d === 5 ? true : v.d === 6 ? ['', 'Regarde bien : « dragon » et Dragon partagent maintenant la même clé.'] : ['', 'Lis Distinct dans le profil : quatre clés, plus null.']);
       await K2.ask(x, 'Cette clé peut-elle servir de libellé affiché ?', [{ t: 'Non : elle sert à comparer, le référentiel fournit l’écriture officielle', ok: true }, { t: 'Oui, « dragon » suffit', err: 'Clé utilisée comme libellé final' }]);
-      await K2.ask(x, '« terminee » et « terminée » auront-elles la même clé ?', [{ t: 'Non : la règle ne retire pas les accents, il faudra une correspondance explicite', ok: true }, { t: 'Oui, les accents disparaissent', err: 'Accents supposés automatiquement supprimés' }]);
       await x.ok('Une clé de comparaison : « dragon » et Dragon se rejoignent, Wonder Wheel garde son espace interne, et null reste null. Cette clé ne sera jamais affichée.');
     } },
 
@@ -148,7 +146,6 @@ const def = {
         } });
       await K2.ask(x, 'Que devient M0150 ?', [{ t: 'Dragon dans Attraction_Normalisee ; « dragon » reste dans Attraction', ok: true }, { t: 'Dragon dans les deux colonnes', err: 'Colonne brute supprimée', msg: '' }]);
       await K2.ask(x, 'Et M0350, sans attraction ?', [{ t: 'Il reste null : aucune preuve ne permet de l’identifier', ok: true }, { t: 'Dragon, l’attraction la plus fréquente', err: 'M0350 remplacé par Dragon' }]);
-      await K2.ask(x, 'Une valeur inconnue, « Dragon Jr », apparaît demain. Que fait la fonction ?', [{ t: 'Elle la laisse telle quelle, pour qu’elle soit signalée', ok: true }, { t: 'Elle la rapproche de Dragon', err: 'Valeur inconnue automatiquement rapprochée' }]);
       await x.ok('Une seule attraction change d’écriture, M0150. M0350 reste une information manquante, et les 1 099 lignes sont là.');
     }, avance: EX3 },
 
@@ -174,7 +171,6 @@ const def = {
           if (p.op === 'replace') return x.oops('Source remplacée');
         } });
       await K2.ask(x, 'Quel statut normalisé pour M0500 ?', [{ t: 'Planifiée : une date passée ne prouve pas l’exécution', ok: true }, { t: 'Terminée, puisque mai est passé', err: 'Toutes les lignes passées mises à Terminée' }]);
-      await K2.ask(x, 'M0500 est-il résolu ?', [{ t: 'Non : son libellé est conforme, son état réel reste à vérifier', ok: true }, { t: 'Oui, son statut est officiel', err: 'M0500 déclaré résolu' }]);
       await x.ok('Une seule différence de statut : M0180 devient Terminée. M0500 reste Planifiée, et son enquête métier reste ouverte.');
     }, avance: EX4 },
 
@@ -224,7 +220,6 @@ const def = {
       K2.open(x, LIB);
       P().decisions207 = [DECISION];
       await K2.ask(x, 'Que vaut maintenant Type_Maintenance_Normalise pour M0700 ?', [{ t: 'Corrective, selon NOM-M207-01', ok: true }, { t: 'Toujours Correctif', msg: 'La colonne appelle la fonction : elle a pris en compte la nouvelle correspondance.' }]);
-      await K2.ask(x, 'Cette correspondance vaut-elle pour tous les logiciels de Wonderland ?', [{ t: 'Non : seulement pour cette source et cette nomenclature', ok: true }, { t: 'Oui, partout', err: 'Règle généralisée à tous les systèmes' }]);
       x.app('dec207', K.lesson('Dossier de décision', 'NOM-M207-01', `${K2.facts([['Correctif', 'devient Corrective'], [1, 'ligne concernée, M0700']])}<p class="lc-note">${esc(fr('Champ : Type_Maintenance. Périmètre : cet export de maintenance. Pièce pédagogique du scénario, référencée dans le code de la fonction.'))}</p>`));
       await x.ok('Une seule différence de type : M0700 passe à Corrective, avec sa justification. Inspection reste Inspection, et Type_Maintenance garde Correctif.');
       x.app('pbi');
@@ -248,9 +243,7 @@ const def = {
         if (v.c === 1 && v.b === 0) return ['M0350 classé valeur non reconnue'];
         return v.a === 3 && v.b === 1 && v.c === 0 ? true : ['', 'Un état absent du profil compte zéro ligne.'];
       });
-      await K2.ask(x, 'Trois lignes normalisées : est-ce toujours trois remplacements ?', [{ t: 'Pas forcément : une même ligne pourrait cumuler plusieurs normalisations', ok: true }, { t: 'Oui, toujours', err: 'Nombre de remplacements confondu avec nombre de lignes' }]);
       await K2.ask(x, 'M0500 est classé Conforme sans changement. Son intervention est-elle validée ?', [{ t: 'Non : son écriture est conforme, son exécution reste à vérifier', ok: true }, { t: 'Oui', err: 'M0500 classé intervention validée' }]);
-      await K2.ask(x, 'Peut-on annoncer zéro anomalie dans le registre ?', [{ t: 'Non : dates, coûts et clé M0949 restent des contrôles distincts', ok: true }, { t: 'Oui, plus aucune valeur non reconnue', err: 'Zéro anomalie globale annoncé' }]);
       await x.ok('Trois normalisations appliquées (M0150, M0180, M0700), une information absente (M0350), aucune valeur non reconnue.');
     }, avance: EX6 },
 
@@ -298,8 +291,6 @@ const def = {
       await K2.num(x, `État de ${LIB}.`, [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 1099 && v.c === 29 ? true : v.l !== 1099 ? ['Volume différent de 1099'] : ['', '25 colonnes héritées et 4 ajoutées.']);
       await K2.prof(x, LIB, 'A_Investiguer_Dates');
       await K2.num(x, 'Les dossiers temporels de la mission 205 sont-ils toujours signalés ?', [{ id: 'n', label: 'TRUE · A_Investiguer_Dates' }], v => v.n === 6 ? true : ['Contrôles de dates perdus']);
-      await K2.prof(x, LIB, 'Dossier_Incomplet');
-      await K2.num(x, 'Et les dossiers incomplets de la mission 203 ?', [{ id: 'n', label: 'TRUE · Dossier_Incomplet' }], v => v.n === 7 ? true : ['', 'Lis la ligne TRUE de la distribution.']);
       await K2.ask(x, 'Statut de M0500 dans la préparation ?', [{ t: 'Toujours Planifiée, dans la source comme dans le résultat', ok: true }, { t: 'Terminée', err: 'M0500 passé à Terminée' }]);
       await K2.ask(x, 'Victoria : « Étudiant, ETUDIANT et Etud. : pouvons-nous appliquer la même démarche à nos tarifs ? »', [{ t: 'Pour préparer et comparer, oui ; pour regrouper, seulement avec une nomenclature confirmée : Etud. pourrait désigner une autre catégorie', ok: true }, { t: 'Oui : tout en minuscules, et c’est réglé', msg: 'Une abréviation peut désigner une autre catégorie tarifaire. Et deux billets au même prix ne sont pas forcément la même catégorie.' }]);
       await K2.final(x, {

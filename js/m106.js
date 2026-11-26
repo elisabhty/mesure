@@ -192,7 +192,7 @@ const def = {
       const next = () => {
         if (!seenAsc) { x.todo('Trie Montant_TTC par ordre croissant : touche son en-tête.'); x.guide(`[data-a="thsort:${v.id}|${mi()}"]`); return; }
         if (!seenDesc) { x.todo('Touche à nouveau l’en-tête pour passer en ordre décroissant.'); x.guide(`[data-a="thsort:${v.id}|${mi()}"]`); return; }
-        x.todo('Ajoute un tri secondaire croissant sur ID_Vente : ⋯ › Ajouter un critère de tri, puis l’en-tête ID_Vente.');
+        x.todo('Tri secondaire croissant sur ID_Vente : ⋯ › Ajouter un critère de tri.');
         x.guide(pbi.st.sortMode === 'secondary' ? `[data-a="thsort:${v.id}|0"]` : [`[data-a="vis:${v.id}"]`, '.vbar .vmore', '.menu [data-k="sort2"]']);
       };
       const ok = () => seenAsc && seenDesc && v.sort && v.sort.i === mi() && v.sort.dir === 'desc' && v.sort2 && v.sort2.i === 0 && v.sort2.dir === 'asc' && pbi.tableData(v).rows.length === 20;

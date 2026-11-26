@@ -741,7 +741,7 @@ const def = {
       const restrictiveAnywhere = () => anyRestr(P().filters) || P().pages.some(p => anyRestr(p.filters) || p.visuals.some(v => anyRestr(v.filters)));
       const slicersOn = () => P().pages.some(p => p.visuals.some(v => v.type === 'slicer' && v.sel));
       const next = () => {
-        if (stage === 1) { x.todo('Trouve le filtre qui réduit les billets à 4, et retire-le. Le segment du week-end reste en place.'); x.guide(pbi.st.pane !== 'Filtres' ? '[data-a="pane:Filtres"]' : `[data-a="fcdel:report|${B}|Canal"]`); return; }
+        if (stage === 1) { x.todo('Trouve et retire le filtre qui réduit les billets à 4. Garde le segment du week-end.'); x.guide(pbi.st.pane !== 'Filtres' ? '[data-a="pane:Filtres"]' : `[data-a="fcdel:report|${B}|Canal"]`); return; }
         if (ds.sel) { x.todo('Réinitialise le rapport : efface la période du segment de dates.'); x.guide(`[data-a="slclear:${DS}"]`); return; }
         if (ts.sel) { x.todo('Efface aussi les catégories du second segment.'); x.guide(`[data-a="slclear:${TS}"]`); return; }
         x.todo('Périmètre global restauré : enregistre Wonderland_Pilotage.'); x.guide('.pbi-save');

@@ -294,7 +294,7 @@ class PBI {
     };
     const r = h(`<div class="ribbon"><div class="rb-tabs"><button class="rb-tab file" data-a="file">Fichier</button>${tabs.map(t => `<button class="rb-tab ${t === st.tab ? 'on' : ''}" data-a="tab:${t}">${esc(t)}</button>`).join('')}</div><div class="rb-cmds"></div></div>`);
     const box = $('.rb-cmds', r);
-    requestAnimationFrame(() => { const tb = $('.rb-tabs', r), on = $('.rb-tab.on', r); if (tb && on && on.offsetLeft + on.offsetWidth > tb.clientWidth) tb.scrollLeft = on.offsetLeft + on.offsetWidth - tb.clientWidth + 8; });
+    requestAnimationFrame(() => { const tb = $('.rb-tabs', r), on = $('.rb-tab.on', r); if (tb && on && on.offsetLeft + on.offsetWidth > tb.clientWidth) tb.scrollLeft = on.offsetLeft + on.offsetWidth - tb.clientWidth + 8; PBI.ribbonHint(box); });
     for (const c of (cmds[st.tab] || []).concat(this.extraCmds ? this.extraCmds(st.tab) : [])) {
       if (c === '|') { box.appendChild(h('<i class="rb-sep"></i>')); continue; }
       if (c instanceof Element) { box.appendChild(c); continue; }
@@ -337,9 +337,21 @@ class PBI {
       if (fv) { pageEl.appendChild(this.visualEl({ ...fv, x: 2, y: 12, w: 96, h: 86 })); pageEl.appendChild(h(`<button class="focus-back" data-a="unfocus:1">‹ Retour au rapport</button>`)); }
       else { this.st.focus = null; for (const v of pg.visuals) pageEl.appendChild(this.visualEl(v)); }
     }
-    main.appendChild(cv);
+    /* Zoom du canevas, comme le curseur de zoom de Power BI : Ajuster, 150 %, 200 % ; au-delà de l'ajustement, la page défile */
+    const Z = [1, 1.5, 2], zi = Math.max(0, Z.indexOf(this.st.zoom || 1));
+    const wrap = h(`<div class="cvwrap"></div>`); wrap.appendChild(cv);
+    if (zi) { cv.classList.add('zoomed'); cv.style.setProperty('--z', Z[zi]); }
+    const zc = h(`<div class="zoomc" role="group" aria-label="Zoom"><button data-z="-1" aria-label="Zoom arrière" ${zi ? '' : 'disabled'}>−</button><button data-z="0" class="zv" aria-label="Ajuster à la page">${zi ? Math.round(Z[zi] * 100) + NB + '%' : 'Ajuster'}</button><button data-z="1" aria-label="Zoom avant" ${zi < Z.length - 1 ? '' : 'disabled'}>+</button></div>`);
+    zc.addEventListener('click', e => {
+      const b = e.target.closest('[data-z]'); if (!b || b.disabled) return; e.stopPropagation();
+      const d = +b.dataset.z, ni = d === 0 ? 0 : Math.max(0, Math.min(Z.length - 1, zi + d));
+      if (ni === zi) return;
+      this.st.zoom = Z[ni]; this.render();
+      const c2 = $('.canvas', this.el); if (c2 && ni) requestAnimationFrame(() => { c2.scrollLeft = (c2.scrollWidth - c2.clientWidth) / 2; c2.scrollTop = 0; });
+    });
+    main.appendChild(wrap);
     if (this.visualBar) this.visualBar(cv);
-    const tabs = h(`<div class="pagetabs"></div>`);
+    const bar = h(`<div class="pagetabs"></div>`), tabs = h(`<div class="ptabs"></div>`); bar.appendChild(tabs);
     for (const p of this.P.pages) {
       if (this.st.renaming === p.id) {
         const inp = h(`<span class="ptab on"><input value="${esc(p.name)}" maxlength="40" aria-label="Nom de la page"></span>`);
@@ -351,8 +363,10 @@ class PBI {
       } else tabs.appendChild(h(`<button class="ptab ${p.id === this.P.activePage ? 'on' : ''}" data-a="ptab:${p.id}">${esc(p.name)}</button>`));
     }
     tabs.appendChild(h(`<button class="ptab-add" data-a="cmd:newpage" aria-label="Nouvelle page">+</button>`));
-    main.appendChild(tabs);
+    bar.appendChild(zc);
+    main.appendChild(bar);
     keepVisible(tabs, '.ptab.on');
+    requestAnimationFrame(() => PBI.ribbonHint(tabs));
     main.appendChild(this.panes());
   }
   renamePage(id, name) {
@@ -878,5 +892,12 @@ function clampDec(n) { return Math.max(0, Math.min(4, n)); }
 
 PBI.renderChart = renderChart; PBI.PAL = PAL; PBI.niceMax = niceMax;
 PBI.convert = convert; PBI.evalQuery = evalQuery; PBI.stepFormula = (q, i) => stepFormula(q.steps[i])(q).replace(/^= /, ''); PBI.TYPES = TYPES; PBI.show = show; PBI.I = I;
+/* Ruban plus large que l'écran : un fondu au bord indique qu'il continue */
+PBI.ribbonHint = box => {
+  if (!box) return;
+  const upd = () => { const max = box.scrollWidth - box.clientWidth; box.classList.toggle('more-r', box.scrollLeft < max - 2); box.classList.toggle('more-l', box.scrollLeft > 2); };
+  if (!box._hint) { box._hint = 1; box.addEventListener('scroll', upd, { passive: true }); }
+  upd();
+};
 window.PBI = PBI;
 })();

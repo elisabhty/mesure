@@ -344,7 +344,7 @@ const def = {
       const ok = () => STEPS.every(s => s[0]());
       const next = () => {
         const s = STEPS.find(s => !s[0]()); if (!s) return;
-        if (s[1] === 'dd') { x.todo('À 80 px de haut, la liste des catégories ne tient plus : passe ce segment en liste déroulante.'); x.guide(fmtGuide(x, TS, ['[data-a="fmtsel:mode"]', '.menu [data-k="dropdown"]'])); return; }
+        if (s[1] === 'dd') { x.todo('Passe ce segment en liste déroulante : à 80 px, la liste ne tient plus.'); x.guide(fmtGuide(x, TS, ['[data-a="fmtsel:mode"]', '.menu [data-k="dropdown"]'])); return; }
         const id = s[1], g = gx(x, id), t = L[id], k = KEYS.find((k, i) => Math.abs(g[k] - t[i]) > 1);
         x.todo(`${NAMES[id]} : X ${t[0]}, Y ${t[1]}, ${t[2]} × ${t[3]} px.`); x.guide(geoGuide(x, id, k, T));
       };

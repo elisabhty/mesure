@@ -58,7 +58,7 @@ const claims = (x, q, items) => x.multi(q, items.map((it, i) => ({ t: it[0], v: 
 const idView = (x, kind, ids, tries) => {
   const same = T => !!T && [...new Set(T.rows.map(r => r.ID_Intervention))].sort().join() === ids.slice().sort().join();
   return K2.tmp(x, { src: LIB, flag: 'tmp210', kind, ops: ['filter'],
-    next: t => same(K2.T(x, t.name)) ? true : [`Filtre ID_Intervention : décoche (Sélectionner tout), puis coche ${ids.join(', ')} avec la recherche.`, ['[data-q="flt:ID_Intervention"]', '[data-all]', '.q2-search', '[data-d="ok"]']],
+    next: t => same(K2.T(x, t.name)) ? true : [`Filtre ID_Intervention : garde seulement ${ids.join(', ')}.`, ['[data-q="flt:ID_Intervention"]', '[data-all]', '.q2-search', '[data-d="ok"]']],
     tries: (p, t) => {
       if (tries) { const r = tries(p, t); if (r === false || r === true) return r; }
       if (p.kind === 'add' && p.op === 'filter') { const R = K2.simulate(x, t, p.step); return same(R.table) ? true : x.oops('', `Garde exactement ${ids.join(', ')}.`); }
@@ -122,7 +122,6 @@ const def = {
         on: { 'q2.depsClose': () => { seen = true; } } });
       await K2.ask(x, 'Quelle requête alimente directement prep_Maintenance_Libelles ?', [{ t: 'prep_Maintenance_Dates, avec la fonction fn_Normaliser', ok: true }, { t: 'atelier_M208_Annuel', err: 'Atelier 2025 présenté comme source de mai 2026' }, { t: 'Le classeur brut, directement', err: 'Référence remplacée par une nouvelle importation non documentée' }]);
       await K2.ask(x, 'D’où viennent les 96 lignes de atelier_M208_Annuel ?', [{ t: 'Des douze CSV de Maintenance › Archives_2025, un par mois', ok: true }, { t: 'D’un export qu’on ne retrouve plus', err: 'Chemin source inconnu' }]);
-      await K2.ask(x, 'Un atelier alimente-t-il le registre principal ou les tables du module 1 ?', [{ t: 'Non : chaque atelier lit ses propres fichiers et s’arrête à son résultat', ok: true }, { t: 'Oui : l’atelier M209 enrichit le registre', err: 'Supports d’atelier mélangés' }]);
       const s1 = sc(4), sg = part(x);
       await x.pixel('Les deux requêtes de l’atelier M206 ne sont rangées dans aucun groupe. Range-les dans un groupe Atelier M206.');
       const q206 = () => P().queries.filter(q => q.name === A206 || q.name === A206B);
@@ -138,7 +137,6 @@ const def = {
           if (p.kind === 'load') return x.oops('Groupes assimilés à des protections de chargement');
           return guard(p);
         } });
-      await K2.ask(x, 'Ce groupe empêche-t-il ces requêtes d’être chargées ?', [{ t: 'Non : il range le projet ; seul le réglage de chargement compte', ok: true }, { t: 'Oui, un groupe d’atelier n’est jamais chargé', err: 'Groupes assimilés à des protections de chargement' }]);
       const s2 = sg(3), sl = part(x);
       await K2.num(x, 'Dans le diagramme, chaque requête indique son chargement. Combien de préparations de maintenance ou d’atelier sont chargées ?', [{ id: 'n', label: 'Préparations chargées' }], v => v.n === 0 ? true : ['', 'Relis les étiquettes du diagramme : Chargement désactivé, ou Table du modèle pour les trois tables historiques.']);
       await x.ok('La chaîne se lit de bout en bout : un classeur, cinq préparations, et trois ateliers séparés, chacun avec ses fichiers. Rien n’est chargé.');
@@ -183,7 +181,6 @@ const def = {
       });
       const s2 = st(5), sj = part(x);
       await K2.ask(x, 'Les deux lignes M0949 ?', [{ t: 'Deux interventions différentes, conservées, avec une collision d’identifiant ouverte', ok: true }, { t: 'Un doublon : il aurait fallu en retirer une', err: 'Retrait de M0949 justifié comme doublon' }]);
-      await K2.ask(x, 'Pourquoi ne pas simplement montrer 1 099 lignes ?', [{ t: 'Un volume ne dit pas quelles lignes sont parties, ni pourquoi', ok: true }, { t: '1 099 suffit : c’est le bon chiffre', err: 'Volume seul présenté comme preuve' }, { t: 'Le TOTAL PROVISOIRE du pied d’export confirme les montants', err: 'Pieds d’export utilisés comme contrôles financiers' }]);
       await x.ok('1 109 lignes brutes, neuf lignes de structure, une copie technique confirmée : 1 099 candidats. La ligne 906 reste, la 907 est partie, et M0949 garde ses deux interventions.');
       first(2, { 'Réconciliation': s1, 'Traçabilité': s2, 'Justification': sj(4) }); hintsOf(x, 2);
     }, avance: AV },
@@ -230,7 +227,6 @@ const def = {
       await idView(x, 'txt', ['M0150', 'M0180', 'M0350', 'M0500', 'M0700']);
       await claims(x, 'Coche ce que montre la vue.', [['M0150 : « dragon » reçu, Dragon dans Attraction_Normalisee', true], ['M0150 : la colonne Attraction affiche déjà Dragon', 'Source normalisée puis présentée comme brute'], ['M0700 : Correctif reçu, Corrective selon NOM-M207-01', true], ['M0350 : toujours sans attraction', true], ['M0500 : toujours Planifiée', true]]);
       await K2.ask(x, 'Une règle qui remplacerait « terminee » par « Terminée » partout dans le texte ?', [{ t: 'Refusée : elle changerait aussi « Non terminée »', ok: true }, { t: 'Acceptée : elle est plus simple', err: 'Non terminée remplacé par Terminée' }]);
-      await K2.ask(x, 'Et une valeur « Dragon Junior » ?', [{ t: 'Non reconnue : elle est signalée, pas rattachée', ok: true }, { t: 'C’est Dragon', err: 'Dragon Junior rapproché automatiquement de Dragon' }]);
       const s1 = sr(5), sa = part(x);
       await x.pixel('Côté atelier M206 maintenant.');
       await K2.prof(x, A206, 'A_Revoir');
@@ -247,7 +243,6 @@ const def = {
       const sc = part(x);
       await K2.prof(x, ANN, 'Fichier_Source');
       await K2.num(x, 'Profil de Fichier_Source.', [{ id: 'd', label: 'Distinct' }, { id: 'n', label: 'Lignes par fichier' }], v => v.d === 12 && v.n === 8 ? true : ['', 'Lis Distinct et la distribution des valeurs.']);
-      await K2.ask(x, 'Septembre a-t-il ses coûts ?', [{ t: 'Oui : CoutHT a été renommé en Cout_HT avant l’ajout', ok: true }, { t: 'Non, et c’est normal', err: 'Septembre sans coût accepté' }]);
       const s1 = sc(5), si = part(x);
       await x.pixel('Provoque l’incident dans une copie temporaire : les douze mois, mais janvier deux fois et pas février.');
       const ids = () => Array.from({ length: 12 }, (_, k) => (K2.q(x, 'm208_' + MM(k + 1)) || {}).id);
@@ -281,10 +276,8 @@ const def = {
       await K2.prof(x, inc().name, 'ID_Intervention');
       await K2.num(x, 'Identifiants distincts dans la copie.', [{ id: 'd', label: 'Distinct' }], v => v.d === 88 ? true : ['', 'Lis Distinct dans le profil.']);
       await K2.num(x, 'Février valait 1 140 € HT, janvier 1 060 €. Quel total HT afficherait la copie, au lieu de 18 000 € ?', [{ id: 't', label: 'Total HT', unit: '€' }], v => v.t === 17920 ? true : v.t === 18000 ? ['96 lignes considérées suffisantes'] : ['', '18 000 €, moins février, plus un second janvier.']);
-      await K2.ask(x, 'Pourquoi ne pas vérifier les mois avec la date d’intervention ?', [{ t: 'Il faut aussi vérifier les fichiers réellement ajoutés : la provenance', ok: true }, { t: 'La date suffit à prouver la couverture', err: 'Contrôle de mois calculé seulement depuis les dates' }]);
       await K2.work(x, { cur: ANN, next: () => { const t = inc(); return t ? tmpTodoDel(x, t) : true; }, delQuery: p => p.target === inc() ? true : false });
       const s2 = si(6), sj = part(x);
-      await K2.ask(x, 'Ces 18 000 € HT valident-ils la maintenance de mai 2026 ?', [{ t: 'Non : ils contrôlent seulement le jeu 2025', ok: true }, { t: 'Oui, ce sont les coûts du parc', err: 'Totaux annuels mélangés à mai 2026' }]);
       await x.ok('Le contrôle a résisté : même avec 96 lignes, il a vu onze mois, seize lignes de janvier, 88 identifiants et 17 920 €. La copie fautive est supprimée, la consolidation reste juste.');
       first(5, { 'Contrôles': s1, 'Incident': s2, 'Justification': sj(4) }); hintsOf(x, 5);
     }, avance: AV },
@@ -306,11 +299,9 @@ const def = {
           if (p.kind === 'add' && p.op === 'expand') return p.step.col === 'Correspondances' ? true : x.oops('', 'Développe Correspondances.');
         } });
       await K2.num(x, 'La copie développée, face au résultat protégé.', [{ id: 'l', label: 'Lignes de la copie' }, { id: 't', label: 'Total HT de la copie', unit: '€' }], v => v.l === 9 && v.t === 2450 ? true : v.t === 2200 ? ['', 'J004 apparaît deux fois dans la copie : son coût aussi.'] : ['', 'Lis la barre d’état ; le total vaut 2 200 € plus la répétition de J004.']);
-      await K2.ask(x, 'Que fait-on de ces neuf lignes ?', [{ t: 'Rien : c’est une démonstration, le résultat protégé garde huit lignes et 2 200 €', ok: true }, { t: 'On les accepte, puisqu’elles viennent de la fusion', err: 'Neuf lignes acceptées' }]);
       await K2.work(x, { cur: N.d, next: () => { const t = demo(); return t ? tmpTodoDel(x, t) : true; }, delQuery: p => p.target === demo() ? true : false });
       const s2 = sd(6), sg = part(x);
       await claims(x, 'Coche les garde-fous effectivement en place.', [['J004 reste sans responsable choisi', true], ['J004 attribué à Malik, listé en premier', 'Premier responsable choisi'], ['Les coûts de J004, J007 et J008 restent présents', true], ['Le total ne compte que les cinq dossiers enrichis', 'Total limité aux dossiers enrichis'], ['J007 vaut 0 € puisqu’il n’a pas de description', 'Attributs nulls interprétés comme coût nul']]);
-      await K2.ask(x, 'L’anti-jointure retrouve-t-elle EQ04 ?', [{ t: 'Non : EQ04 a deux correspondances, pas zéro', ok: true }, { t: 'Oui, c’est son rôle', err: 'Anti-jointure utilisée pour chercher EQ04' }]);
       await K2.ask(x, 'Faut-il retirer une des deux lignes EQ04 du référentiel ?', [{ t: 'Non, pas sans confirmation : les deux affectations restent à investiguer', ok: true }, { t: 'Oui, celle de Lina', err: 'Référentiel corrigé sans confirmation' }]);
       await x.ok('Huit interventions, 2 200 € HT, cinq correspondances uniques et trois causes distinctes. La copie de neuf lignes a montré le piège, sans rien laisser derrière elle.');
       first(6, { 'Contrôles': s1, 'Démonstration': s2, 'Garde-fous': sg(4) }); hintsOf(x, 6);
@@ -326,7 +317,6 @@ const def = {
         next: () => refreshed ? true : !K2.shown(x, ANN) ? K2.showTodo(x, ANN) : ['Relis seulement cet atelier : Accueil › Actualiser l’aperçu › Actualiser l’aperçu.', ['[data-q="tab:Accueil"]', '[data-q="cmd:refresh"]', '.menu [data-k="one"]']],
         on: { 'q2.refresh': p => { if (p.all) return x.oops('Actualisation générale des sources historiques'); if (K2.shown(x, ANN)) refreshed = true; } } });
       await K2.num(x, 'Après la relecture des douze fichiers.', [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 96 && v.c === 11 ? true : ['', 'Lis la barre d’état.']);
-      await K2.ask(x, 'Un résultat stable prouve-t-il que les données sont justes ?', [{ t: 'Non : il prouve la reproductibilité, pas la résolution des dossiers ouverts', ok: true }, { t: 'Oui, tout est validé', err: 'Résultat stable assimilé à qualité métier totale' }]);
       const s1 = sa(3), sd = part(x);
       await x.pixel('Simule maintenant une dérive de schéma, sur une copie : une référence de m208_10 où Cout_TTC change de nom.');
       const test = () => P().queries.find(q => q.tmp210 === 'test');
@@ -345,7 +335,6 @@ const def = {
       await K2.blank(x, { name: CTL, src: SCHEMA, flag: 'tmp210', kind: 'ctl', cur: TEST, pasteTodo: 'Touche Coller, puis Terminé.' });
       await look(x, CTL);
       await K2.ask(x, `Que montre ${CTL} ?`, [{ t: 'Une erreur explicite : Cout_TTC absent', ok: true }, { t: 'Rien de particulier, je n’ai pas besoin de le regarder', err: 'Contrôle décrit mais jamais exécuté' }]);
-      await K2.ask(x, 'Sans ce contrôle, que ferait l’ajout de M208 avec ce fichier ?', [{ t: 'Il créerait CoutTotal à part, et Cout_TTC serait vide pour octobre, sans alerte', ok: true }, { t: 'Rien de grave', err: 'Coût manquant créé silencieusement' }]);
       await K2.ask(x, 'Comment réagir à cette dérive ?', [{ t: 'La diagnostiquer avec le fournisseur avant de toucher à la préparation', ok: true }, { t: 'Renommer CoutTotal en Cout_TTC sans rien dire', err: 'Changement de nom réparé sans diagnostic' }, { t: 'Remplacer l’erreur par 0', err: 'Erreur masquée par une valeur zéro' }]);
       const s2 = sd(4), sc = part(x);
       await K2.work(x, { cur: ANN,

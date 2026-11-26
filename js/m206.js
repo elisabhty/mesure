@@ -78,7 +78,7 @@ const def = {
         next: () => {
           const b = qa(P(), 'b'), c = qa(P(), 'c');
           if (!b) {
-            if (pbi.dlgKind === 'q2csv') return ['Vérifie les accents de l’aperçu et le découpage en colonnes : règle l’origine du fichier et le délimiteur, puis OK.', ['[data-x="enc"]', '.menu [data-k="65001"]', '[data-x="delim"]', '.menu [data-k=";"]', '[data-d="ok"]']];
+            if (pbi.dlgKind === 'q2csv') return ['Règle l’origine et le délimiteur jusqu’à un aperçu lisible, puis OK.', ['[data-x="enc"]', '.menu [data-k="65001"]', '[data-x="delim"]', '.menu [data-k=";"]', '[data-d="ok"]']];
             if (pbi.dlgKind === 'q2open') return [`Ouvre le dossier Ancien_logiciel, puis ${FILE}.`, ['[data-sub="Ancien_logiciel"]', `[data-f="${FILE}"]`, '[data-d="open"]']];
             return ['Accueil › Nouvelle source › Texte/CSV.', ['[data-q="tab:Accueil"]', '[data-q="cmd:newsource"]', '.menu [data-k="csv"]']];
           }
@@ -151,7 +151,6 @@ const def = {
           if (p.kind === 'add' && p.op === 'split') return x.oops('', 'On compte d’abord, on coupera à l’exercice suivant.');
         } });
       await K2.num(x, 'Combien de lignes s’écartent des trois éléments attendus ?', [{ id: 'n', label: 'Lignes hors structure' }], v => v.n === 2 ? true : v.n === 0 ? ['Comptage réalisé uniquement sur la première ligne'] : ['', 'Compare chaque valeur de Nb_Elements_Equipement à 3.']);
-      await K2.ask(x, 'Deux barres verticales séparent combien d’éléments ?', [{ t: 'Trois', ok: true }, { t: 'Deux', err: 'Nombre de séparateurs présenté comme nombre d’éléments' }]);
       await K2.ask(x, 'S006 compte deux éléments. Que faire ?', [{ t: 'Le conserver et signaler le type absent', ok: true }, { t: 'Le déclarer complet', err: 'S006 déclaré complet' }, { t: 'Le supprimer de l’atelier', err: 'S006 supprimé' }]);
       await K2.ask(x, 'S007 en compte quatre. Que faire ?', [{ t: 'Conserver Urgence et signaler l’élément en plus', ok: true }, { t: 'Le déclarer conforme', err: 'S007 déclaré conforme' }, { t: 'Ne garder que les trois premiers', err: 'S007 tronqué' }]);
       await K2.ask(x, '« Dragon | | Corrective » compterait trois éléments. Est-il conforme ?', [{ t: 'Non : la zone est vide, il faut aussi contrôler le contenu', ok: true }, { t: 'Oui, le compte est bon', err: 'Éléments vides ignorés sans contrôle' }]);
@@ -173,11 +172,11 @@ const def = {
           if (!K2.shown(x, COLS)) return K2.showTodo(x, COLS);
           const c = cols(), sp = splitCols();
           if (!c.includes(CP) && !sp.length && !PARTS.some(p => c.includes(p))) return ['Sélectionne Equipement_Brut, puis Ajouter une colonne › Dupliquer la colonne.', ['[data-q="hd:Equipement_Brut"]', '[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:dupcol"]']];
-          if (c.includes(CP)) return [`Sélectionne ${CP}, puis Transformer › Fractionner la colonne › Par délimiteur. Personnalisé : |, à chaque occurrence.`, [`[data-q="hd:${CP}"]`, '[data-q="tab:Transformer"]', '[data-q="cmd:split"]', '.menu [data-k="delim"]', '[data-x="d"]', '.menu [data-k="custom"]', '[data-x="c"]', '[data-d="ok"]']];
+          if (c.includes(CP)) return x.pbi.dlgKind === 'q2split' ? ['Délimiteur personnalisé : |, à chaque occurrence, puis OK.', ['[data-x="d"]', '.menu [data-k="custom"]', '[data-x="c"]', '[data-d="ok"]']] : [`Sélectionne ${CP}, puis Transformer › Fractionner la colonne › Par délimiteur.`, [`[data-q="hd:${CP}"]`, '[data-q="tab:Transformer"]', '[data-q="cmd:split"]', '.menu [data-k="delim"]']];
           for (let i = 0; i < 4; i++) if (c.includes(`${CP}.${i + 1}`)) return K2.colTodo(`${CP}.${i + 1}`, PARTS[i]);
           const u = untrimmed(), multi = x.pbi.q2.multi, sel = x.pbi.q2.sel;
-          if (u.length === 1) return [`Il reste des espaces dans ${u[0]} : sélectionne-la, puis Transformer › Format › Supprimer les espaces.`, [`[data-q="hd:${u[0]}"]`, '[data-q="tab:Transformer"]', '[data-q="cmd:format"]', '.menu [data-k="trim"]']];
-          if (u.length) return [`Retire les espaces autour des valeurs extraites : Sélection multiple, les ${u.length === 4 ? 'quatre' : u.length} colonnes concernées, puis Transformer › Format › Supprimer les espaces.`, (multi ? [] : ['[data-q="tab:Accueil"]', '[data-q="cmd:multi"]']).concat(u.filter(c => !sel.includes(c)).map(c => `[data-q="hd:${c}"]`), ['[data-q="tab:Transformer"]', '[data-q="cmd:format"]', '.menu [data-k="trim"]'])];
+          if (u.length === 1) return [`Espaces dans ${u[0]} : sélectionne-la, puis Transformer › Format › Supprimer les espaces.`, [`[data-q="hd:${u[0]}"]`, '[data-q="tab:Transformer"]', '[data-q="cmd:format"]', '.menu [data-k="trim"]']];
+          if (u.length) return [`En sélection multiple, les ${u.length === 4 ? 'quatre' : u.length} colonnes extraites, puis Transformer › Format › Supprimer les espaces.`, (multi ? [] : ['[data-q="tab:Accueil"]', '[data-q="cmd:multi"]']).concat(u.filter(c => !sel.includes(c)).map(c => `[data-q="hd:${c}"]`), ['[data-q="tab:Transformer"]', '[data-q="cmd:format"]', '.menu [data-k="trim"]'])];
           return true;
         },
         tries: p => {
@@ -216,7 +215,6 @@ const def = {
         }
       });
       await K2.ask(x, 'Que vaut Type_Extrait pour S006 ?', [{ t: 'null : la source ne fournit pas ce type', ok: true }, { t: 'Il faudrait y mettre Corrective', err: 'Type inventé pour S006' }]);
-      await K2.ask(x, 'Où se trouve Urgence, le quatrième élément de S007 ?', [{ t: 'Dans Complement_Equipement, conservé pour investigation', ok: true }, { t: 'Il a disparu au fractionnement', err: 'Quatrième élément supprimé' }]);
       await x.ok('Quatre colonnes nettoyées, huit lignes, Equipement_Brut intact. Wonder Wheel et Sky Tower gardent leurs espaces internes, S006 garde son absence, S007 son complément.');
     }, avance: EX3 },
 
@@ -243,7 +241,6 @@ const def = {
       await K2.num(x, 'Combien de couples nom et prénom sont exploitables ?', [{ id: 'n', label: 'Couples exploitables' }], v => v.n === 7 ? true : v.n === 8 ? ['S008 interprété automatiquement'] : ['', 'Compte les lignes où Nom_Extrait n’est pas null.']);
       await x.say('oscar', 'Nous savons que Robert Nora ressemble à un nom complet. Pourquoi ne pas couper à l’espace ?');
       await K2.ask(x, 'Que répondre à Oscar ?', [{ t: 'Ce serait une seconde règle non documentée, qui échouerait sur d’autres noms : S008 reste à confirmer', ok: true }, { t: 'Coupons à l’espace pour cette seule ligne', err: 'S008 interprété automatiquement' }]);
-      await K2.ask(x, 'Un champ « Martin, » avec un prénom vide est-il une identité complète ?', [{ t: 'Non : les deux éléments doivent être renseignés', ok: true }, { t: 'Oui, la virgule est présente', err: 'Champ vide accepté comme identité complète' }]);
       await x.ok('Sept couples exploitables : Le Goff, Anne Marie et Jean-Pierre gardent tous leurs caractères. S008 reste à null, sans interprétation, et Technicien_Brut est intact.');
     }, avance: EX4 },
 
@@ -266,7 +263,6 @@ const def = {
           if (p.kind === 'add' && p.op === 'custom' && /"(Alice|Martin|Jean)/.test(p.step.src || '')) return x.oops('Résultats saisis manuellement');
         } });
       await K2.ask(x, 'Quel affichage pour S008 ?', [{ t: 'null : son extraction reste à confirmer', ok: true }, { t: 'Nora Robert', err: 'S008 affiché comme identité validée' }]);
-      await K2.ask(x, 'Que vient-on de fusionner ?', [{ t: 'Deux colonnes d’une même table', ok: true }, { t: 'Deux requêtes', err: 'Fusion de requêtes lancée' }]);
       await x.ok('Alice Martin, Jean-Pierre Dupont, Anne Marie Le Goff : un affichage calculé, et les champs Nom et Prénom restent disponibles pour les contrôles.');
     }, avance: EX5 },
 
@@ -295,8 +291,6 @@ const def = {
           if (p.kind === 'add' && (p.op === 'rmrows' || p.op === 'removeCols')) return x.oops('Trois lignes supprimées');
         } });
       await K2.ask(x, 'S007 : faut-il ranger Urgence comme type de maintenance ?', [{ t: 'Non : son troisième élément est déjà Corrective', ok: true }, { t: 'Oui, c’est plus précis', err: 'Urgence transformé automatiquement en type' }]);
-      await K2.ask(x, 'Pourquoi trois états de contrôle plutôt qu’une seule étiquette Erreur ?', [{ t: 'Chaque état nomme ce qui manque ou ce qui dépasse', ok: true }, { t: 'Une étiquette Erreur suffirait', err: 'Causes regroupées sous Erreur sans explication' }]);
-      await K2.ask(x, 'Les cinq autres lignes sont-elles fiables ?', [{ t: 'Conformes en structure, sans que leur exactitude métier soit certifiée', ok: true }, { t: 'Oui, elles sont validées', err: 'Toutes les lignes déclarées fiables' }]);
       await x.ok('Trois lignes à revoir : S006 incomplet, S007 avec un élément en plus, S008 sans séparateur. Les huit lignes restent dans la préparation.');
     }, avance: EX6 },
 
@@ -307,13 +301,12 @@ const def = {
       await x.pixel('Commençons par le témoin : la requête brute.');
       await K2.work(x, { cur: BRUT, next: () => K2.shown(x, BRUT) ? true : K2.showTodo(x, BRUT) });
       await K2.num(x, `État de ${BRUT}.`, [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 8 && v.c === 5 ? true : ['Colonne source nettoyée puis présentée comme originale', 'Le témoin garde ses huit lignes et ses cinq colonnes : lis sa barre d’état.']);
-      await K2.ask(x, 'Reference_Brute et Commentaire sont-elles toujours dans la préparation ?', [{ t: 'Oui, avec les trois autres colonnes sources', ok: true }, { t: 'Non, elles ne servaient plus', err: 'Références BT perdues' }]);
       await K2.prof(x, COLS, 'ID_Ligne');
       await K2.num(x, 'Profil de ID_Ligne dans la préparation.', [{ id: 'n', label: 'Nombre' }, { id: 'd', label: 'Distinct' }], v => v.n === 8 && v.d === 8 ? true : ['Contrôle limité au nombre de lignes', 'Lis Nombre et Distinct dans le profil.']);
       await x.pixel('Reconstruisons maintenant les équipements conformes, dans une vue temporaire : si la jonction des trois morceaux redonne le texte reçu, l’extraction est cohérente.');
       await x.formula(K2.F.recon, 'Formule · Reconstruction_OK');
       await K2.tmp(x, { src: COLS, flag: 'tmp206', kind: 'rec', ops: ['custom'],
-        next: t => K2.cols(K2.T(x, t.name)).includes('Reconstruction_OK') ? true : ['Ajouter une colonne › Colonne personnalisée. Nom : Reconstruction_OK, type : Vrai/Faux, puis touche Coller dans la formule.', ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:custom"]', '[data-x="n"]', '[data-x="t"]', '[data-x="paste"]', '[data-d="ok"]']],
+        next: t => K2.cols(K2.T(x, t.name)).includes('Reconstruction_OK') ? true : K2.customTodo(x, 'Reconstruction_OK', 'bool'),
         tries: (p, t) => {
           if (p.kind === 'custom' && p.syntax === false) return x.oops('', 'La formule contient une erreur de syntaxe : touche Effacer, puis Coller.');
           if (p.kind === 'add' && p.op === 'custom') {
@@ -330,7 +323,6 @@ const def = {
       await K2.num(x, 'Combien d’équipements se reconstruisent à l’identique ?', [{ id: 'n', label: 'TRUE' }], v => v.n === 6 ? true : ['', 'Lis la ligne TRUE de la distribution.']);
       await K2.ask(x, 'S007 n’est pas reconstruit ici. Son contenu est-il perdu ?', [{ t: 'Non : Urgence est conservé dans Complement_Equipement', ok: true }, { t: 'La reconstruction prouve que tout est conservé', err: 'S007 reconstruit sans son complément puis déclaré intégralement conservé' }]);
       await K2.ask(x, 'La reconstruction certifie-t-elle que Dragon est le bon équipement ?', [{ t: 'Non : elle contrôle la transformation, pas la réalité', ok: true }, { t: 'Oui', err: 'Reconstruction assimilée à certification métier' }]);
-      await K2.ask(x, 'Jean-Pierre et Anne Marie Le Goff ont-ils gardé tous leurs caractères ?', [{ t: 'Oui : trait d’union et espaces internes conservés', ok: true }, { t: 'Inutile de vérifier', err: 'Noms composés non contrôlés' }]);
       await x.ok('Huit lignes, huit identifiants, cinq colonnes sources intactes. Six équipements se reconstruisent ; S006 et S007 sont expliqués à part ; S008 garde son texte reçu.');
     }, avance: P => { EX6(P); } },
 

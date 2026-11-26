@@ -240,7 +240,7 @@ const def = {
       const sorts0 = TBL.map(id => JSON.stringify([K.visOf(x, id).sort || null, K.visOf(x, id).sort2 || null]));
       const sortsOk = () => TBL.every((id, i) => JSON.stringify([K.visOf(x, id).sort || null, K.visOf(x, id).sort2 || null]) === sorts0[i]);
       await x.say('lola', 'Je prépare notre prochaine campagne. Quelles catégories génèrent le plus de ventes ? Quel canal est le plus important ? Et le classement change-t-il avec l’indicateur ?');
-      x.todo('Compare les catégories et les canaux avec les tableaux existants. Justifie tes conclusions.');
+      x.todo('Compare catégories et canaux avec les tableaux existants.');
       const eC0 = x.errors;
       const Gx = G(x);
       const H = extra => G(x, Object.assign({
@@ -356,7 +356,7 @@ const def = {
       K.ready(x, 'page_001'); clearSel(pbi); pbi.render();
       await x.say('oscar', 'Nous devons organiser nos équipes techniques. Quelle attraction a enregistré le plus de passages ? Et quelle journée a été la plus chargée ?');
       await x.say('oscar', 'Est-ce que nous devrions fermer l’attraction la moins fréquentée ?');
-      x.todo('Utilise les trois graphiques de la page Attractions, puis explore la composition de la journée la plus chargée.');
+      x.todo('Page Attractions : explore les trois graphiques, puis la journée la plus chargée.');
       const e0 = x.errors;
       const pt = () => st.xsel && st.xsel.vis === STACK && st.xsel.value === '2026-06-05';
       const next = () => {
@@ -470,7 +470,7 @@ const def = {
       const ds = K.visOf(x, DS), ts = K.visOf(x, TS); ds.sel = null; ts.sel = null; pbi.render();
       await x.say('victoria', 'Imagine que tu sois absent demain. Pourrions-nous continuer à utiliser ton rapport sans toi ?');
       await x.say('victoria', 'Sélectionne le week-end, visite les trois pages avec le menu, puis reviens sur la vue principale.');
-      x.todo('Vérifie que le rapport s’utilise sans toi : week-end sélectionné, parcours Détail des ventes, Attractions, puis Vue générale.');
+      x.todo('Week-end sélectionné, parcours Détail des ventes, Attractions, puis Vue générale.');
       const e0 = x.errors;
       const visited = [], ROUTE = ['page_002', 'page_003', 'page_001'];
       const wkOk = () => range(ds, '2026-06-06', '2026-06-07');

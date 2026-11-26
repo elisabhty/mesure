@@ -496,12 +496,13 @@ P_.q2setType = function (cols, type, loc) {
 };
 P_.q2localeDialog = function () {
   const q2 = this.q2; let type = 'date', loc = 'fr-FR';
+  this.q2lst = { get type() { return type; }, get loc() { return loc; } };
   const body = h(`<div class="q2-form"><p class="q2-msg">${esc(fr(`Modifie le type de ${q2.sel.length > 1 ? 'ces colonnes' : `la colonne ${q2.sel[0]}`} en interprétant les valeurs selon les conventions d’un pays.`))}</p>
     <label>Type de données<button class="sel-box" data-x="t"></button></label><label>Paramètres régionaux<button class="sel-box" data-x="l"></button></label></div>`);
   const draw = () => { $('[data-x="t"]', body).textContent = TY[type].nom; $('[data-x="l"]', body).textContent = PQE.LOCALES[loc]; };
   body.addEventListener('click', e => {
     const x = e.target.closest('[data-x]'); if (!x) return; e.preventDefault();
-    if (x.dataset.x === 't') this.menu(x, ['dec', 'fixed', 'int', 'pct', 'date', 'datetime', 'time', 'text', 'bool'].map(k => [k, TY[k].nom, k === type]), k => { type = k; draw(); }, { host: this.el });
+    if (x.dataset.x === 't') this.menu(x, ['dec', 'fixed', 'int', 'pct', 'date', 'datetime', 'time', 'text', 'bool'].map(k => [k, TY[k].nom, k === type]), k => { type = k; draw(); this.q2emit('q2.locale', { type }); }, { host: this.el });
     else this.menu(x, Object.entries(PQE.LOCALES).map(([k, n]) => [k, n, k === loc]), k => { loc = k; draw(); this.q2emit('q2.locale', { loc }); }, { host: this.el });
   });
   this.dialog('Modifier le type avec les paramètres régionaux', body, [{ t: 'OK', pri: true, id: 'ok', fn: () => { this.closeDialog(); this.q2setType(q2.sel.slice(), type, loc); } }, { t: 'Annuler', id: 'cancel', fn: () => this.closeDialog() }], { kind: 'q2locale' });

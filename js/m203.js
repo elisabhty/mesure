@@ -231,7 +231,6 @@ const def = {
         if (!bad.length) { B.lock(); return true; }
         return x.oops('Justificatif non défini', `${bad[0]} : ${SOL[bad[0]] === 'oscar' ? 'le technicien ou l’attraction figure sur le bon d’intervention' : 'un coût se justifie avec une pièce de coût'}.`);
       } });
-      await K2.ask(x, 'La liste est prête. Ces sept dossiers sont-ils résolus ?', [{ t: 'Non : signalés, en attente des pièces', ok: true }, { t: 'Oui, ils sont identifiés', err: 'Résolution déclarée après simple signalement' }]);
       x.app('pbi');
       await x.ok(`${N} dossiers, chacun avec un responsable et une preuve attendue. La préparation principale garde ses 1 100 lignes et ses 19 colonnes.`);
     }, avance: EX6 },
@@ -251,7 +250,6 @@ const def = {
         return ['', 'Technicien : 1 097 ÷ 1 100. Attraction : 1 099 ÷ 1 100. Coût : 1 097 ÷ 1 100. Dossiers : 7 ÷ 1 100.'];
       });
       await K2.ask(x, 'Le coût HT est renseigné à 99,73 %. Peut-on dire que 99,73 % des coûts sont fiables ?', [{ t: 'Non : le taux mesure seulement l’absence des cas ciblés', ok: true }, { t: 'Oui', err: 'Coûts déclarés fiables à 99,73 %' }]);
-      await K2.ask(x, 'Sept problèmes, sept dossiers : est-ce toujours le cas ?', [{ t: 'Ici oui, après vérification ; en général, une ligne peut cumuler plusieurs absences', ok: true }, { t: 'Oui, un problème égale toujours une ligne', err: 'Sept problèmes assimilés à sept lignes par principe' }, { t: 'On additionne les trois taux de colonnes', err: 'Pourcentages de colonnes additionnés' }]);
       x.app('pbi');
       await x.ok('Sept enregistrements sur 1 100 sont incomplets selon les trois règles étudiées. Les autres peuvent encore cacher des dates impossibles, des doublons ou des montants incohérents.');
     } },

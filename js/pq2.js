@@ -140,7 +140,7 @@ P_.q2top = function (q) {
   const n = this.P.queries.length;
   return h(`<div class="q2-top">
     <button class="q2-qbtn" data-q="qd" aria-label="Volet Requêtes">${QI.list}<span>Requêtes</span><b>${n}</b></button>
-    <button class="q2-qname ${q && !loadOf(q) ? 'nl' : ''}" data-q="qmenu:${q ? esc(q.id) : ''}">${q ? esc(q.name) : 'Aucune requête'}</button>
+    <button class="q2-qname ${q && !loadOf(q) ? 'nl' : ''}" data-q="qmenu:${q ? esc(q.id) : ''}">${q ? esc(q.name).replace(/_/g, '_<wbr>') : 'Aucune requête'}</button>
     <button class="q2-x" data-q="x" aria-label="Fermer Power Query">${I.close}</button></div>`);
 };
 const RB = {
@@ -163,9 +163,9 @@ P_.q2ribbon = function (q) {
     if (c === '|') { box.appendChild(h('<i class="rb-sep"></i>')); continue; }
     const [k, label, ic, drop] = c;
     const dis = !q || (NEEDCOL.includes(k) && !q2.sel.length) || (['custom', 'cond', 'index', 'group', 'choose', 'keeprows', 'rmrows', 'promote', 'count', 'invoke', 'merge'].includes(k) && !T);
-    box.appendChild(h(`<button class="rb-cmd ${k in toggles && toggles[k] ? 'rbon' : ''}" data-q="cmd:${k}" ${dis && k !== 'newsource' && k !== 'enter' && k !== 'apply' && k !== 'deps' && !(k in toggles) ? 'disabled' : ''}>${QI[ic] || ''}<span>${esc(label)}${drop ? ' ' + QI.arrow : ''}</span></button>`));
+    box.appendChild(h(`<button class="rb-cmd ${label.length > 28 ? 'wide' : ''} ${k in toggles && toggles[k] ? 'rbon' : ''}" data-q="cmd:${k}" ${dis && k !== 'newsource' && k !== 'enter' && k !== 'apply' && k !== 'deps' && !(k in toggles) ? 'disabled' : ''}>${QI[ic] || ''}<span>${esc(label)}${drop ? ' ' + QI.arrow : ''}</span></button>`));
   }
-  requestAnimationFrame(() => { const tb = $('.rb-tabs', r), on = $('.rb-tab.on', r); if (tb && on && on.offsetLeft + on.offsetWidth > tb.clientWidth) tb.scrollLeft = on.offsetLeft + on.offsetWidth - tb.clientWidth + 8; });
+  requestAnimationFrame(() => { const tb = $('.rb-tabs', r), on = $('.rb-tab.on', r); if (tb && on && on.offsetLeft + on.offsetWidth > tb.clientWidth) tb.scrollLeft = on.offsetLeft + on.offsetWidth - tb.clientWidth + 8; PBI.ribbonHint(box); });
   return r;
 };
 P_.q2fx = function (q) {
@@ -181,11 +181,11 @@ P_.q2status = function (q) {
   const T = q ? this.q2table() : null, q2 = this.q2;
   const nr = T ? T.rows.length : 0;
   return h(`<div class="q2-status"><span>${T ? `${T.cols.length} COLONNE${T.cols.length > 1 ? 'S' : ''}, ${nr > 999 ? '999+' : nr} LIGNE${nr > 1 ? 'S' : ''}` : q ? '—' : ''}</span>
-    <button class="q2-scope" data-q="scope">${q2.scope === 'all' ? 'Profilage de colonne basé sur l’ensemble des données' : 'Profilage de colonne basé sur les 1 000 premières lignes'} ${QI.arrow}</button></div>`);
+    <button class="q2-scope" data-q="scope" aria-label="${q2.scope === 'all' ? 'Profilage de colonne basé sur l’ensemble des données' : 'Profilage de colonne basé sur les 1 000 premières lignes'}">${q2.scope === 'all' ? 'Profilage sur toutes les lignes' : 'Profilage sur 1 000 lignes'} ${QI.arrow}</button></div>`);
 };
 
 /* ───────── Grille virtualisée ───────── */
-const RH = 24;
+const RH = 30, HR = 42, HQ = 46, HD = 50;
 P_.q2gridBox = function (q) {
   const q2 = this.q2;
   const box = h(`<div class="q2-grid" data-tap></div>`);
@@ -208,13 +208,13 @@ P_.q2gridBox = function (q) {
   /* largeurs de colonnes */
   const sample = T.rows.slice(0, 80);
   const W = T.cols.map(c => {
-    let m = c.n.length * 7.2 + 58;
-    for (const row of sample) { const d = disp(row[c.n], c.t, ws); m = Math.max(m, Math.min(d.s.length, 34) * 6.9 + 20); }
-    return Math.round(Math.max(76, Math.min(m, 260)));
+    let m = c.n.length * 8.2 + 68;
+    for (const row of sample) { const d = disp(row[c.n], c.t, ws); m = Math.max(m, Math.min(d.s.length, 34) * 7.8 + 22); }
+    return Math.round(Math.max(86, Math.min(m, 300)));
   });
-  const RN = Math.max(34, String(T.rows.length).length * 8 + 14);
+  const RN = Math.max(38, String(T.rows.length).length * 9 + 16);
   const prof = (q2.quality || q2.dist) ? this.q2profAll(T) : null;
-  const headH = 38 + (q2.quality ? 40 : 0) + (q2.dist ? 46 : 0);
+  const headH = HR + (q2.quality ? HQ : 0) + (q2.dist ? HD : 0);
   const totalW = RN + W.reduce((a, b) => a + b, 0);
   const inner = h(`<div class="q2-gin" style="width:${totalW}px; height:${headH + T.rows.length * RH + 6}px"></div>`);
   const sel = new Set(q2.sel);
@@ -263,7 +263,7 @@ P_.q2gridBox = function (q) {
     /* Une colonne qui vient d'être créée est amenée dans le champ de vision */
     if (q2._reveal) {
       const i = T.cols.findIndex(x => x.n === q2._reveal); q2._reveal = null;
-      if (i >= 0) { const left = RN + W.slice(0, i).reduce((a, b) => a + b, 0), right = left + W[i], cw = box.clientWidth; if (left < box.scrollLeft + RN || right > box.scrollLeft + cw) box.scrollLeft = Math.max(0, Math.min(left - RN - 8, right - cw + 16)); }
+      if (i >= 0) { const left = RN + W.slice(0, i).reduce((a, b) => a + b, 0), right = left + W[i], cw = box.clientWidth; if (left < box.scrollLeft + RN || right > box.scrollLeft + cw) box.scrollLeft = snapLeft(W, RN, Math.max(0, Math.min(left - RN, right - cw + 2))); }
     }
     body._f = -1; draw(); if (q2._scrollTo) { const t = q2._scrollTo; q2._scrollTo = null; this.q2scrollTo(t.r, t.c); }
   });
@@ -271,13 +271,15 @@ P_.q2gridBox = function (q) {
   this.q2grid = { box, T, W, RN, headH, draw };
   return box;
 };
+/* Défilement horizontal calé sur le bord d'une colonne : jamais de colonne à moitié cachée à gauche */
+const snapLeft = (W, RN, want) => { let x = 0; for (const w of W) { if (x >= want - 1) return x; x += w; } return want; };
 const pct = (a, b) => b ? Math.round(a / b * 1000) / 10 : 0;
 const pctTxt = (a, b) => { if (!b || !a) return '0' + NB + '%'; const v = a / b * 100; return (v > 0 && v < 1 ? '<' + NB + '1' : v > 99 && v < 100 ? '>' + NB + '99' : String(Math.round(v))) + NB + '%'; };
 /* Fait défiler la grille jusqu'à une ligne (et une colonne) */
 P_.q2scrollTo = function (r, c) {
   const g = this.q2grid; if (!g || !g.box.isConnected) { this.q2._scrollTo = { r, c }; return; }
   g.box.scrollTop = Math.max(0, g.headH + r * RH - g.box.clientHeight / 2);
-  if (c) { const k = g.T.cols.findIndex(x => x.n === c); if (k >= 0) { const left = g.RN + g.W.slice(0, k).reduce((a, b) => a + b, 0); if (left < g.box.scrollLeft + g.RN || left + g.W[k] > g.box.scrollLeft + g.box.clientWidth) g.box.scrollLeft = Math.max(0, left - g.RN - 8); } }
+  if (c) { const k = g.T.cols.findIndex(x => x.n === c); if (k >= 0) { const left = g.RN + g.W.slice(0, k).reduce((a, b) => a + b, 0); if (left < g.box.scrollLeft + g.RN || left + g.W[k] > g.box.scrollLeft + g.box.clientWidth) g.box.scrollLeft = Math.max(0, left - g.RN); } }
   g.draw();
 };
 P_.q2profAll = function (T) {
@@ -368,7 +370,7 @@ P_.q2drawer = function () {
     if (q2.collapsed[g]) continue;
     for (const q of qs) {
       const r = eng.run(q), isFn = r.value instanceof PQE.MFn;
-      list.appendChild(h(`<div class="q2-qi ${q.id === q2.cur ? 'on' : ''} ${named ? 'in' : ''}"><button class="q2-qs ${loadOf(q) ? '' : 'nl'}" data-q="qsel:${esc(q.id)}">${isFn ? QI.fn : I.tbl}<span>${esc(q.name)}</span>${r.error ? QI.warn : ''}</button><button class="q2-qm" data-q="qmenu:${esc(q.id)}" aria-label="Menu de ${esc(q.name)}">${QI.dots}</button></div>`));
+      list.appendChild(h(`<div class="q2-qi ${q.id === q2.cur ? 'on' : ''} ${named ? 'in' : ''}"><button class="q2-qs ${loadOf(q) ? '' : 'nl'}" data-q="qsel:${esc(q.id)}">${isFn ? QI.fn : I.tbl}<span>${esc(q.name).replace(/_/g, '_<wbr>')}</span>${r.error ? QI.warn : ''}</button><button class="q2-qm" data-q="qmenu:${esc(q.id)}" aria-label="Menu de ${esc(q.name)}">${QI.dots}</button></div>`));
     }
   }
   return box;

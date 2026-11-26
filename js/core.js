@@ -234,6 +234,7 @@ function expect(handlers, t) {
 }
 /* Toute action de la personne passe ici. Le gestionnaire renvoie true (étape réussie), false (mauvaise piste : action refusée) ou rien (action acceptée, étape pas finie). */
 function act(type, payload) {
+  stepBack();
   const e = expectation;
   if (e && e.handlers[type]) {
     let r;
@@ -256,7 +257,7 @@ function cancelRun() {
 
 /* ───────── Mission : couches ───────── */
 const missionEl = $('#mission'), layers = { cine: $('#cine'), work: $('#work'), reward: $('#reward') };
-function showLayer(n) { for (const k in layers) { layers[k].classList.toggle('is-on', k === n); layers[k].inert = k !== n; } }
+function showLayer(n) { for (const k in layers) { layers[k].classList.toggle('is-on', k === n); layers[k].inert = k !== n; } if (n === 'work') requestAnimationFrame(() => fitTitle()); }
 
 /* Cinématique */
 const cineBg = $('#cine-bg'), cineStack = $('#cine-stack');
@@ -332,49 +333,113 @@ function trimStack() {
 }
 
 /* ───────── Espace de travail ───────── */
-const thread = $('#thread'), ws = $('#ws'), answer = $('#answer');
-let curTodo = null, oopsTimer = 0;
+/* En bas, une seule zone : la dernière réplique, la consigne, puis la question. Elle pousse le logiciel vers le haut. */
+const thread = $('#thread'), ws = $('#ws'), answer = $('#answer'), ansCard = $('#ans-card'), workEl = $('#work');
+const consigne = $('#consigne'), consigneT = $('#consigne-t'), grab = $('#dock-grab');
+let curTodo = null;
 const readMs = text => clamp(700 + text.length * 30, 1300, 3800);
+/* Une réplique longue devient plusieurs bulles courtes, coupées entre deux phrases */
+function splitLine(text) {
+  const t = String(text);
+  if (t.length <= 130) return [t];
+  const s = t.split(/(?<=[.!?…])\s+(?=[A-ZÀÂÉÈÊÎÔÛÇ«0-9])/);
+  if (s.length < 2) return [t];
+  const out = []; let cur = '';
+  for (const x of s) { if (cur && (cur + ' ' + x).length > 120) { out.push(cur); cur = x; } else cur = cur ? cur + ' ' + x : x; }
+  if (cur) out.push(cur);
+  return out;
+}
+/* Changement de hauteur animé : la zone glisse au lieu de sauter */
+function morph(el, change) {
+  const h0 = el.offsetHeight;
+  change();
+  el.style.height = '';
+  const h1 = el.offsetHeight;
+  if (h0 === h1 || reduced) return;
+  el.style.height = h0 + 'px'; void el.offsetHeight; el.style.height = h1 + 'px';
+  clearTimeout(el._mt); el._mt = setTimeout(() => { el.style.height = ''; }, 380);
+}
+function showLine(el) {
+  morph(thread, () => {
+    const prev = $('.bub.cur', thread);
+    if (prev && prev !== el) { prev.classList.remove('cur', 'in'); prev.classList.add('out'); setTimeout(() => prev.classList.remove('out'), 260); }
+    if (el) el.classList.add('cur');
+  });
+  if (el) requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  grab.classList.toggle('off', !thread.children.length);
+}
+function keepThread() { const all = $$('.bub', thread); for (let i = 0; i < all.length - 80; i++) if (!all[i].classList.contains('cur')) all[i].remove(); }
 function bubble(who, text, kind = '') {
-  const last = thread.lastElementChild;
-  const first = !(last && last.dataset.who === who && !last.classList.contains('gone'));
-  const p = person(who);
-  const el = h(`<div class="bub ${who} ${kind} ${first ? 'first' : ''}" data-who="${who}"><img class="av" src="${avatar(who)}" alt=""><div class="t"></div></div>`);
-  $('.t', el).innerHTML = (first && who !== 'pixel' ? `<small>${esc(p.nom)} · ${esc(fr(p.role))}</small>` : '') + esc(fr(text));
-  thread.appendChild(el);
-  layoutThread();
-  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  const p = person(who), txt = fr(text);
+  const el = h(`<div class="bub ${who} ${kind}" data-who="${who}" data-kind="${kind}"><img class="av" src="${avatar(who)}" alt=""><div class="t"></div></div>`);
+  $('.t', el).innerHTML = (who !== 'pixel' ? `<small>${esc(p.nom)}</small>` : '') + esc(txt);
+  el.dataset.txt = txt;
+  thread.appendChild(el); keepThread();
+  if (kind !== 'todo') showLine(el); else grab.classList.remove('off');
   return el;
 }
 /* Bulle de code : texte exact à copier (formules M), sans typographie française */
 function codeBubble(text, label) {
-  const last = thread.lastElementChild;
-  const first = !(last && last.dataset.who === 'pixel' && !last.classList.contains('gone'));
-  const el = h(`<div class="bub pixel code ${first ? 'first' : ''}" data-who="pixel"><img class="av" src="${avatar('pixel')}" alt=""><div class="t">${label ? `<small>${esc(fr(label))}</small>` : ''}<pre></pre><button class="copy" type="button">Copier</button></div></div>`);
-  $('pre', el).textContent = text;
+  const el = h(`<div class="bub pixel code" data-who="pixel" data-kind="code"><img class="av" src="${avatar('pixel')}" alt=""><div class="t">${label ? `<small>${esc(fr(label))}</small>` : ''}<pre></pre><button class="copy" type="button">Copier</button></div></div>`);
+  $('pre', el).textContent = text; el.dataset.txt = text;
   $('.copy', el).addEventListener('click', e => {
     e.stopPropagation(); window.PBQ.clip = text;
     try { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {}); } catch (er) {}
     const b = e.currentTarget; b.textContent = 'Copié'; b.classList.add('done'); act('clip', { text });
   });
-  thread.appendChild(el); layoutThread();
-  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  thread.appendChild(el); keepThread(); showLine(el);
   return el;
 }
-function layoutThread() {
-  const all = $$('.bub', thread);
-  if (all.length > 6) all.splice(0, all.length - 6).forEach(b => b.remove());
-  const list = $$('.bub', thread);
-  let room = thread.clientHeight - 10;
-  for (let i = list.length - 1; i >= 0; i--) {
-    const b = list[i]; b.classList.remove('gone');
-    const hgt = b.offsetHeight + 5;
-    if (i < list.length - 1) b.classList.add('old'); else b.classList.remove('old');
-    if (room >= hgt) room -= hgt; else { for (let k = i; k >= 0; k--) list[k].classList.add('gone'); break; }
-  }
+/* Consigne : l'action à faire, toujours au même endroit, juste au-dessus du pouce */
+function setConsigne(text) {
+  if (!text) { consigne.classList.remove('on'); return; }
+  const on = consigne.classList.contains('on');
+  clearTimeout(consigneT._t);
+  if (on && consigneT.textContent === text && !consigneT.classList.contains('swap')) return;
+  /* Même consigne qui avance (compteur 3/15…) : mise à jour directe, sans fondu */
+  const near = on && !consigneT.classList.contains('swap') && consigneT.textContent.slice(0, 18) === text.slice(0, 18);
+  if (on && !reduced && !near) {
+    consigneT.classList.add('swap');
+    consigneT._t = setTimeout(() => { morph(consigne, () => { consigneT.textContent = text; }); consigneT.classList.remove('swap'); }, 150);
+  } else if (on) { morph(consigne, () => { consigneT.textContent = text; }); consigneT.classList.remove('swap'); }
+  else { consigneT.textContent = text; consigneT.classList.remove('swap'); }
+  consigne.classList.add('on');
+}
+function endTodo() { curTodo = null; setConsigne(null); }
+/* Pendant le travail, la réplique s'efface et laisse la place au logiciel ; elle reste dans l'historique */
+function stepBack() {
+  if (!curTodo || answer.classList.contains('on')) return;
+  const cur = thread.querySelector('.bub.cur');
+  if (cur && !/\b(code|hint)\b/.test(cur.className)) showLine(null);
 }
 thread.addEventListener('click', hurry);
-function clearThread() { thread.innerHTML = ''; curTodo = null; clearTimeout(oopsTimer); }
+function clearThread() { thread.innerHTML = ''; thread.style.height = ''; curTodo = null; clearTimeout(consigneT._t); setConsigne(null); grab.classList.add('off'); }
+/* Historique de l'exercice : la poignée (ou un glissement vers le haut) ouvre toute la conversation */
+function openHistory() {
+  const items = $$('.bub', thread); if (!items.length) return;
+  const sh = $('#sheet'); sh.innerHTML = '';
+  sh.appendChild(h(`<h2 class="hist-t">Conversation</h2>`));
+  const list = h('<div class="hist"></div>');
+  items.forEach(b => {
+    const who = b.dataset.who, kind = b.dataset.kind || '', p = person(who);
+    const row = h(`<div class="hrow ${kind}"><img src="${avatar(who)}" alt=""><div class="hb"><b>${kind === 'todo' ? 'À faire' : kind === 'hint' ? 'Indice' : esc(p.nom)}${kind === '' && who !== 'pixel' && p.role ? `<small> · ${esc(fr(p.role))}</small>` : ''}</b><p></p></div></div>`);
+    if (kind === 'code') { const pre = h('<pre></pre>'); pre.textContent = b.dataset.txt; $('p', row).replaceWith(pre); }
+    else $('p', row).textContent = kind === 'hint' ? b.dataset.txt.replace(/^Indice \d+\/\d+ · /, '') : b.dataset.txt;
+    list.appendChild(row);
+  });
+  sh.appendChild(list);
+  sh.appendChild(btn('Revenir à l’exercice', 'cta dark', closeSheet));
+  openSheet();
+  requestAnimationFrame(() => { sh.scrollTop = sh.scrollHeight; });
+}
+grab.addEventListener('click', openHistory);
+{
+  let y0 = null;
+  const dock = $('#dock');
+  dock.addEventListener('pointerdown', e => { y0 = e.target.closest('.thread, .dock-grab, .consigne') ? e.clientY : null; });
+  dock.addEventListener('pointermove', e => { if (y0 !== null && e.clientY - y0 < -26) { y0 = null; openHistory(); } });
+  dock.addEventListener('pointerup', () => { y0 = null; }); dock.addEventListener('pointercancel', () => { y0 = null; });
+}
 
 /* Cibles */
 let targets = [];
@@ -391,21 +456,23 @@ function app(name, el) {
 }
 function resetApps() { for (const k in apps) { apps[k].remove(); delete apps[k]; } }
 
-/* Panneau de réponse */
-/* Module 2 : l'espace de travail se resserre au-dessus du panneau de réponse, pour garder l'éditeur lisible */
-function fitWs() {
-  if (!active || active.id < 200 || !answer.classList.contains('on') || !answer.offsetParent) { ws.style.marginBottom = ''; return; }
-  const par = answer.offsetParent, pr = par.getBoundingClientRect(), wr = ws.getBoundingClientRect(), k = pr.height / (par.offsetHeight || 1);
-  const gap = (pr.bottom - wr.bottom) / k + (parseFloat(ws.style.marginBottom) || 0);
-  ws.style.marginBottom = Math.max(0, answer.offsetHeight - gap + 6) + 'px'; ws.classList.add('squeeze');
-}
+/* Panneau de réponse : dans la zone du bas, à la place de la consigne */
 function openAnswer(el) {
-  { const lb = thread && thread.lastElementChild; if (lb && lb.classList.contains('todo')) lb.classList.add('done'); } answer.innerHTML = ''; answer.appendChild(el); answer.classList.add('on'); ws.style.marginBottom = ''; ws.classList.remove('squeeze'); requestAnimationFrame(() => requestAnimationFrame(fitWs)); }
-function closeAnswer() { answer.classList.remove('on'); ws.style.marginBottom = ''; ws.classList.remove('squeeze'); }
+  setConsigne(null);
+  ansCard.innerHTML = ''; ansCard.appendChild(el); ansCard.scrollTop = 0;
+  answer.classList.add('on');
+  ws.classList.add('squeeze');
+}
+function closeAnswer() {
+  answer.classList.remove('on'); ws.classList.remove('squeeze');
+  setTimeout(() => { if (curTodo && !answer.classList.contains('on')) setConsigne(fr(curTodo)); }, 0);
+}
+/* Clavier du téléphone : la zone du bas reste juste au-dessus */
 function placeAnswer() {
-  const vv = window.visualViewport; if (!vv || !mqMobile.matches) { answer.style.bottom = ''; return; }
-  const off = Math.max(0, innerHeight - vv.height - vv.offsetTop);
-  answer.style.bottom = off + 'px';
+  const vv = window.visualViewport;
+  const off = vv && mqMobile.matches ? Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop)) : 0;
+  workEl.style.setProperty('--kb', off > 40 ? off + 'px' : '0px');
+  workEl.classList.toggle('kb', off > 40);
 }
 if (window.visualViewport) { visualViewport.addEventListener('resize', placeAnswer); visualViewport.addEventListener('scroll', placeAnswer); }
 
@@ -415,17 +482,25 @@ function overflows(e) {
   if (!r.width || !e.offsetWidth) return false;
   const k = r.width / e.offsetWidth, cs = getComputedStyle(e);
   const inner = (e.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) * k;
+  /* Les points de suspension masquent le dépassement : on mesure le texte entier */
+  const ell = cs.textOverflow === 'ellipsis' && cs.whiteSpace === 'nowrap', to = e.style.textOverflow; if (ell) e.style.textOverflow = 'clip';
   const rg = document.createRange(); rg.selectNodeContents(e);
-  return rg.getBoundingClientRect().width > inner + .75 || e.scrollWidth > e.clientWidth + 1;
+  const res = rg.getBoundingClientRect().width > inner + (ell ? -1 : .75) || e.scrollWidth > e.clientWidth + 1;
+  e.style.textOverflow = to;
+  return res;
 }
 function fitTitle() {
   const b = $('#w-name'); b.classList.remove('fit1', 'fit2');
-  if (overflows(b)) { b.classList.add('fit1'); if (overflows(b)) { b.classList.remove('fit1'); b.classList.add('fit2'); } }
+  /* Marge de sécurité : à quelques dixièmes de pixel près, le navigateur ajoute déjà des points de suspension */
+  const tight = () => { if (!b.clientWidth) return false; const sp = document.createElement('span'); sp.textContent = b.textContent; sp.style.cssText = 'position:absolute;white-space:nowrap;visibility:hidden'; b.appendChild(sp); const w = sp.getBoundingClientRect().width / ((b.getBoundingClientRect().width / b.offsetWidth) || 1); sp.remove(); return w > b.clientWidth - 3; };
+  if (tight()) { b.classList.add('fit1'); if (tight()) { b.classList.remove('fit1'); b.classList.add('fit2'); } }
 }
 if (document.fonts) document.fonts.ready.then(() => fitTitle());
+/* Le titre se réajuste dès que sa place change (couche affichée, rotation, police chargée) */
+if (window.ResizeObserver) { let lastW = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w && w !== lastW) { lastW = w; fitTitle(); } }).observe($('.w-title')); }
 /* XP et étapes */
 function setXP(v, plus) {
-  const x = $('#w-xp'); x.textContent = fr(v + ' XP');
+  const x = $('#w-xp'); $('#w-xp-n').textContent = fr(v + ' XP');
   if (plus) { const f = h(`<span class="xp-float">+${plus}</span>`); x.appendChild(f); setTimeout(() => f.remove(), 1400); }
 }
 function setSteps(i, lesson) {
@@ -439,18 +514,21 @@ function makeCtx(m, t, exIndex, pbi) {
   const tx = (TX[m.id] || [])[exIndex] || { i: [], e: [] };
   const ctx = {
     m, t, pbi, P: pbi ? pbi.P : null, i: exIndex, errors: 0, hintsUsed: 0, errSeen: {},
-    say(who, text) { bubble(who, text); return sleep(readMs(text), t); },
+    async say(who, text) { endTodo(); for (const part of splitLine(text)) { bubble(who, part); await sleep(readMs(part), t); } },
     async says(who, list) { for (const s of list) await ctx.say(who, s); },
     pixel(text) { return ctx.say('pixel', text); },
     todo(text) {
-      clearTimeout(oopsTimer);
-      const last = thread.lastElementChild;
-      if (curTodo === text && last && last.classList.contains('todo') && !last.classList.contains('gone')) { last.classList.remove('done'); return; }
-      curTodo = text; bubble('pixel', text, 'todo');
+      if (curTodo === text && consigne.classList.contains('on')) return;
+      if (curTodo !== text) {
+        curTodo = text; bubble('pixel', text, 'todo');
+        const cur = $('.bub.cur', thread);
+        if (cur && /\b(oops|hint)\b/.test(cur.className)) showLine(null);
+      }
+      if (!answer.classList.contains('on')) setConsigne(fr(text));
     },
-    ok(text) { bubble('pixel', text, 'ok'); return sleep(readMs(text), t); },
+    async ok(text) { endTodo(); for (const part of splitLine(text)) { bubble('pixel', part, 'ok'); await sleep(readMs(part), t); } },
     note(text) { bubble('pixel', text); },
-    code(text, label) { codeBubble(text, label); return sleep(900, t); },
+    code(text, label) { endTodo(); codeBubble(text, label); return sleep(900, t); },
     /* Question à choix multiples : des pastilles à cocher, validées ensemble */
     multi(q, options, check, btnLabel) {
       return new Promise((resolve, reject) => {
@@ -493,10 +571,7 @@ function makeCtx(m, t, exIndex, pbi) {
       if (ctx.errors >= 2 && !ctx._gOn) { ctx._gOn = true; showGuide(); }
       const e = findErr(tx.e, label);
       const msg = e ? e[1] : (fallback || label);
-      clearTimeout(oopsTimer);
       bubble('pixel', msg, 'oops');
-      const r = run, todo = curTodo;
-      if (todo) oopsTimer = setTimeout(() => { if (r === run && curTodo === todo) bubble('pixel', todo, 'todo'); }, readMs(msg) + 400);
       return false;
     },
     wait(handlers) { return expect(handlers, t); },
@@ -538,7 +613,7 @@ function makeCtx(m, t, exIndex, pbi) {
           if (bad[0] || bad[1]) ctx.oops(bad[0], bad[1]);
           shake($('.fields', el));
         });
-        openAnswer(el); placeAnswer();
+        openAnswer(el);
         const guard = setInterval(() => { if (t !== run) { clearInterval(guard); closeAnswer(); reject(new Cancel()); } }, 300);
       });
     },
@@ -733,7 +808,10 @@ function controle() {
   const cut = (e, nom) => { if (e.offsetWidth && !hidden(e) && overflows(e)) pb.push(`${nom} : texte coupé (« ${e.textContent.trim().slice(0, 40)} »)`); };
   $$('.tbl th, .tbl td').forEach(c => cut(c, 'cellule'));
   $$('.rb-cmd, .rb-tab, .ptab, .pane-tab, .conn, .frow span, .nav-obj, .sel-box, .fbtn, .w-title b, .v-title, .choice, .pick, .field label, .step, .tsel, .menu button, .mcard h4, .mcard li, .dicon, .q2-hn, .q2-qbtn, .q2-scope, .chipb, .q2-qual span, .q2-dist span').forEach(e => cut(e, e.className.split(' ')[0]));
-  $$('.bub.in:not(.gone) .t').forEach(b => { const r = b.getBoundingClientRect(), tr = thread.getBoundingClientRect(); if (b.closest('.work.is-on') && r.top < tr.top - .5) pb.push(`bulle coupée (« ${b.textContent.slice(0, 40)} »)`); });
+  if (workEl.classList.contains('is-on')) {
+    $$('.bub.cur.in .t').forEach(b => { const r = b.getBoundingClientRect(), tr = thread.getBoundingClientRect(); if (!thread.style.height && (r.top < tr.top - .5 || r.bottom > tr.bottom + .5)) pb.push(`réplique coupée (« ${b.textContent.slice(0, 40)} »)`); });
+    if (ws.offsetHeight < 140) pb.push(`logiciel écrasé (${ws.offsetHeight} px)`);
+  }
   $$('.vis').forEach(v => { const p = v.closest('.page'); if (!p) return; const a = v.getBoundingClientRect(), b = p.getBoundingClientRect(); if (a.width && (a.right > b.right + 1 || a.bottom > b.bottom + 1)) pb.push('visuel hors de la page'); });
   return pb;
 }

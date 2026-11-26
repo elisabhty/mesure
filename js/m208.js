@@ -102,7 +102,7 @@ const def = {
           if (wrong()) return ['Volet Requêtes : ⋯ à côté de m208_11, puis Supprimer.', ['[data-q="qd"]', K2.qmenu(x, wrong()), '.menu [data-k="del"]', '[data-d="del"]']];
           const n = nov();
           if (!n) {
-            if (pbi.dlgKind === 'q2csv') return ['Garde l’origine 65001 : Unicode (UTF-8), choisis le délimiteur Point-virgule et Ne pas détecter les types de données : ils seront définis à la fin, selon le contrat du fichier. Puis OK.', ['[data-x="delim"]', '.menu [data-k=";"]', '[data-x="detect"]', '.menu [data-k="none"]', '[data-d="ok"]']];
+            if (pbi.dlgKind === 'q2csv') return K2.csvTodo(x);
             if (pbi.dlgKind === 'q2open') return [`Ouvre Maintenance › Archives_2025, puis ${FILE}.`, W.nav('Maintenance/Archives_2025', FILE)];
             return ['Accueil › Nouvelle source › Texte/CSV.', ['[data-q="tab:Accueil"]', '[data-q="cmd:newsource"]', '.menu [data-k="csv"]']];
           }
@@ -162,7 +162,6 @@ const def = {
       await look('m208_11');
       await K2.ask(x, 'Et novembre ?', [{ t: 'Les huit champs, plus une colonne Note_Export', ok: true }, { t: 'Rien de particulier', err: 'Différence de schéma ignorée' }]);
       await K2.ask(x, 'Que faut-il faire pour octobre avant l’ajout ?', [{ t: 'Rien : l’ajout aligne les colonnes par leur nom', ok: true }, { t: 'Remettre ses valeurs dans l’ordre de janvier', err: 'Réorganisation manuelle des valeurs' }, { t: 'Renommer ses colonnes selon leur position', err: 'Tous les champs renommés selon leur position' }]);
-      await K2.ask(x, 'Et la note de novembre ?', [{ t: 'On la conserve : elle sera vide pour les autres mois', ok: true }, { t: 'On la supprime, elle n’existe qu’une fois', err: 'Note_Export supprimée' }]);
       await x.ok('Septembre : un nom à harmoniser. Octobre : rien à faire, les noms suffisent. Novembre : une colonne optionnelle à préserver.');
     } },
 
@@ -191,7 +190,6 @@ const def = {
           if (p.op === 'rename') { const [from, to] = p.merge ? [p.col, p.name] : p.step.pairs[p.step.pairs.length - 1]; return from === 'CoutHT' && to === 'Cout_HT' ? true : x.oops('', 'Renomme seulement CoutHT, en Cout_HT : les sept autres champs portent déjà le nom du contrat.'); }
         }
       });
-      await K2.ask(x, 'Septembre possédait-il déjà une colonne Cout_HT ?', [{ t: 'Non : un seul champ de coût, le renommage ne crée aucune collision', ok: true }, { t: 'Peu importe, on renomme quand même', err: 'Renommage malgré deux champs déjà présents' }]);
       await K2.ask(x, 'Que faire pour Note_Export dans les onze autres mois ?', [{ t: 'Rien : l’ajout la complétera par null', ok: true }, { t: 'Y recopier la note de novembre', err: 'Note de novembre propagée à tous les mois' }]);
       await x.ok('Septembre parle maintenant de Cout_HT, comme les autres mois. Aucun coût perdu, aucune ligne retirée, la note de novembre intacte.');
     }, avance: EX3 },
@@ -229,7 +227,6 @@ const def = {
       pbi.engine().touch(); if (pbi.q2) pbi.q2.dirty = true; if (pbi.q2El) pbi.q2render();
       await K2.work(x, { cur: 'm208_11', next: () => K2.shown(x, 'm208_11') ? true : K2.showTodo(x, 'm208_11') });
       await K2.ask(x, 'Que valent les deux colonnes de provenance de m208_11 ?', [{ t: 'Maintenance_2025_11.csv et 2025-11', ok: true }, { t: 'Maintenance_2025_01.csv et 2025-01', err: 'Même fichier indiqué pour toutes les lignes' }, { t: 'Rien encore : on les ajoutera après l’ajout', err: 'Provenance ajoutée seulement après l’ajout' }]);
-      await K2.ask(x, 'Pourquoi ne pas déduire Mois_Source de la date d’intervention ?', [{ t: 'Pour pouvoir détecter un événement rangé dans le mauvais fichier', ok: true }, { t: 'On pourrait, cela revient au même', err: 'Mois_Source déduit uniquement de la date' }]);
       await x.ok('Chaque ligne porte désormais son fichier et son mois déclarés : douze couples différents, avant tout empilement.');
     }, avance: EX4 },
 
@@ -244,7 +241,7 @@ const def = {
         next: () => {
           const a = annQ(P());
           if (!a) {
-            if (pbi.dlgKind === 'q2append') return ['Trois tables ou plus, puis touche chacun des douze mois une seule fois, de m208_01 à m208_12. Puis OK.', ['input[name="am"][value="many"]'].concat(ids().map(id => `[data-add="${id}"]`), ['[data-d="ok"]'])];
+            if (pbi.dlgKind === 'q2append') return pbi.dlg && pbi.dlg.querySelector('input[name="am"][value="many"]:checked') ? ['Ajoute les douze mois, de m208_01 à m208_12, puis OK.', ids().map(id => `[data-add="${id}"]`).concat(['[data-d="ok"]'])] : ['Choisis Trois tables ou plus.', ['input[name="am"][value="many"]']];
             return ['Accueil › Ajouter des requêtes › Ajouter des requêtes comme nouvelle.', ['[data-q="tab:Accueil"]', '[data-q="cmd:append"]', '.menu [data-k="new"]']];
           }
           if (!K2.shown(x, a.name)) return K2.showTodo(x, a.name);
@@ -272,7 +269,6 @@ const def = {
         }
       });
       await K2.num(x, `État de ${ANN}.`, [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 96 && v.c === 11 ? true : ['', 'Lis la barre d’état de la nouvelle requête.']);
-      await K2.ask(x, 'Les valeurs d’octobre sont-elles sous les bons en-têtes ?', [{ t: 'Oui : l’ajout les a alignées par nom', ok: true }, { t: 'Non, elles sont décalées', err: 'Valeurs décalées en octobre' }]);
       await K2.ask(x, '96 lignes : la consolidation est-elle validée ?', [{ t: 'Pas encore : un mois oublié et un mois répété pourraient se compenser', ok: true }, { t: 'Oui, 12 × 8 = 96', err: 'Total de 96 accepté sans contrôle des mois' }]);
       await x.ok('96 lignes, 11 colonnes : huit champs métier, la note de novembre et la provenance. Les douze sources restent intactes.');
     }, avance: EX5 },
@@ -338,7 +334,6 @@ const def = {
         done: p => { if (p.kind === 'type' && pbi.q2) { pbi.q2.sel = []; pbi.q2.multi = false; if (pbi.q2El) pbi.q2render(); } }
       });
       await K2.ask(x, 'TVA_Taux vaut 0,2. Que signifie ce taux ?', [{ t: '20 %', ok: true }, { t: '0,2 %', err: '0,20 interprété comme 0,20 %' }]);
-      await K2.ask(x, 'Note_Export est vide sur 88 lignes. Est-ce anormal ?', [{ t: 'Non : elle n’existe qu’en novembre, son absence ailleurs est prévue', ok: true }, { t: 'Oui, il faut la remplir', err: 'Note_Export traitée comme champ obligatoire rempli partout' }]);
       await x.ok('Aucune erreur de conversion : des montants lus avec le point décimal, des dates ISO, une TVA de 20 %, et la provenance gardée en texte.');
     }, avance: EX6 },
 
@@ -356,7 +351,7 @@ const def = {
       await x.formula(K2.F.ctlLigne, 'Formule · Controle_Ligne');
       const V = () => tmps(P()).find(q => q.tmp208 === 'ctl');
       await K2.tmp(x, { src: ANN, flag: 'tmp208', kind: 'ctl', ops: ['custom'],
-        next: t => t.steps.some(s => s.op === 'custom') ? true : ['Ajouter une colonne › Colonne personnalisée. Nom : Controle_Ligne, type : Vrai/Faux, puis touche Coller dans la formule.', ['[data-q="tab:Ajouter une colonne"]', '[data-q="cmd:custom"]', '[data-x="n"]', '[data-x="t"]', '[data-x="paste"]', '[data-d="ok"]']],
+        next: t => t.steps.some(s => s.op === 'custom') ? true : K2.customTodo(x, 'Controle_Ligne', 'bool'),
         tries: (p, t) => {
           if (p.kind === 'custom' && p.syntax === false) return x.oops('', 'La formule contient une erreur de syntaxe : touche Effacer, puis Coller.');
           if (p.kind === 'add' && p.op === 'distinct') return x.oops('Doublons supprimés pour retrouver le volume');
@@ -376,7 +371,7 @@ const def = {
         next: () => {
           if (!K2.shown(x, V().name)) return K2.showTodo(x, V().name);
           if (V().steps.some(s => s.op === 'group')) return true;
-          return ['Transformer › Regrouper par, Avancé : regroupe par Mois_Source, puis ajoute Fichier_Source. Agrégations : Lignes (Nombre de lignes), Cout_HT_Total (Somme de Cout_HT), Cout_TTC_Total (Somme de Cout_TTC).', ['[data-q="tab:Transformer"]', '[data-q="cmd:group"]', 'input[name="gm"][value="a"]', '[data-d="ok"]']];
+          return K2.groupTodo(x, { keys: ['Mois_Source', 'Fichier_Source'], aggs: [{ as: 'Lignes', op: 'count' }, { as: 'Cout_HT_Total', op: 'sum', col: 'Cout_HT' }, { as: 'Cout_TTC_Total', op: 'sum', col: 'Cout_TTC' }] });
         },
         tries: p => {
           if (p.kind === 'add' && p.op === 'distinct') return x.oops('Doublons supprimés pour retrouver le volume');
@@ -400,8 +395,6 @@ const def = {
       x.app('ref208', K.lesson('Réconciliation', 'Tes contributions, face au référentiel du jeu 2025', `<table class="tbl" style="width:100%"><thead><tr><th><span class="thc">Mois</span></th><th style="text-align:right"><span class="thc">Lignes</span></th><th style="text-align:right"><span class="thc">HT (€)</span></th><th style="text-align:right"><span class="thc">TTC (€)</span></th></tr></thead><tbody>${REF.map((r, i) => { const g = by['2025-' + MM(i + 1)] || {}; return `<tr><td>${esc(MOIS[i])}</td>${cell(g.Lignes, 8)}${cell(g.Cout_HT_Total, r[0])}${cell(g.Cout_TTC_Total, r[1])}</tr>`; }).join('')}<tr><td><b>Année</b></td>${cell(tot('Lignes'), 96)}${cell(tot('Cout_HT_Total'), 18000)}${cell(tot('Cout_TTC_Total'), 21600)}</tr></tbody></table>`));
       await K2.ask(x, 'Les douze contributions concordent-elles avec le référentiel ?', [{ t: 'Oui : huit lignes et les mêmes montants pour chaque mois', ok: true }, { t: 'Le total annuel concorde, cela suffit', err: 'Total annuel seul vérifié' }]);
       await K2.ask(x, 'Un analyste obtient 96 lignes, mais a ajouté janvier deux fois et oublié février. Que montrerait ce regroupement ?', [{ t: 'Seize lignes pour janvier, aucune pour février, et des identifiants répétés', ok: true }, { t: 'Rien : 96 lignes, c’est le bon total', err: 'Total annuel seul vérifié' }]);
-      await K2.ask(x, '96 lignes, c’est combien de visiteurs ?', [{ t: 'Aucun : ce sont des interventions de maintenance', ok: true }, { t: '96 visiteurs', err: '96 lignes assimilées à 96 visiteurs' }]);
-      await K2.ask(x, 'Ces totaux valident-ils les coûts du registre de mai 2026 ?', [{ t: 'Non : ils contrôlent seulement le jeu 2025', ok: true }, { t: 'Oui, c’est la même maintenance', err: 'Totaux 2025 attribués à mai 2026' }]);
       x.app('pbi');
       await x.ok('Douze contributions conformes, 96 identifiants distincts, chaque TTC cohérent et chaque date dans son mois. Ces totaux contrôlent le jeu 2025, pas les coûts de mai 2026.');
     }, avance: EX6 },

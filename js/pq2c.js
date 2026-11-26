@@ -99,7 +99,10 @@ P_.q2customDialog = function (step, edit, T0) {
     prev.appendChild(h(`<div class="q2-pv">${out.map(v2 => { const d = disp(v2); return `<span class="${d.c}">${esc(d.c === 'err' ? 'Error : ' + fr(v2.message) : d.s === '' ? '(texte vide)' : d.s)}</span>`; }).join('')}</div>`));
   };
   fb.ta.addEventListener('input', () => { clearTimeout(fb._t); fb._t = setTimeout(preview, 250); });
-  const ty = this.q2sel($('[data-x="t"]', body), () => [['any', 'Tout'], ['text', 'Texte'], ['int', 'Nombre entier'], ['dec', 'Nombre décimal'], ['fixed', 'Nombre décimal fixe'], ['date', 'Date'], ['bool', 'Vrai/Faux']], type, k => type = k);
+  const ty = this.q2sel($('[data-x="t"]', body), () => [['any', 'Tout'], ['text', 'Texte'], ['int', 'Nombre entier'], ['dec', 'Nombre décimal'], ['fixed', 'Nombre décimal fixe'], ['date', 'Date'], ['bool', 'Vrai/Faux']], type, k => { type = k; this.q2emit('q2.customOpt', {}); });
+  this.q2cust = { get name() { return $('[data-x="n"]', body).value.trim(); }, get type() { return ty.get(); }, get src() { return fb.value(); } };
+  $('[data-x="n"]', body).addEventListener('input', () => { clearTimeout(this._cpt); this._cpt = setTimeout(() => this.q2emit('q2.customOpt', {}), 350); });
+  fb.ta.addEventListener('input', () => { clearTimeout(this._cpt2); this._cpt2 = setTimeout(() => this.q2emit('q2.customOpt', {}), 350); });
   preview();
   this.q2dlg('Colonne personnalisée', body, () => {
     const name = $('[data-x="n"]', body).value.trim(), src = fb.value();
@@ -204,24 +207,27 @@ P_.q2groupDialog = function (step, edit, T0, col) {
   let adv = !!(step && (step.keys.length > 1 || step.aggs.length > 1));
   const keys = step ? step.keys.slice() : [col || this.q2.sel[0] || T.cols[0].n];
   const aggs = step ? clone(step.aggs) : [{ as: 'Nombre', op: 'count', col: null }];
+  /* État lisible de la boîte, pour guider pas à pas ; chaque réglage est signalé */
+  this.q2gst = { get adv() { return adv; }, keys, aggs };
+  const ping = () => this.q2emit('q2.groupOpt', {});
   const body = h(`<div class="q2-form"><div class="q2-radio"><label><input type="radio" name="gm" value="b" ${adv ? '' : 'checked'}> De base</label><label><input type="radio" name="gm" value="a" ${adv ? 'checked' : ''}> Avancé</label></div><div class="q2-gk"></div><div class="q2-ga"></div></div>`);
   const draw = () => {
     const gk = $('.q2-gk', body); gk.innerHTML = '<small class="q2-lbl">Regrouper par</small>';
-    keys.forEach((k, i) => { const r = h(`<div class="q2-row"><button class="sel-box"></button>${adv && keys.length > 1 ? `<button class="q2-clx">${I.close.replace('<svg', '<svg width="12" height="12"')}</button>` : ''}</div>`); this.q2sel($('.sel-box', r), () => T.cols.map(c => [c.n, c.n]), k, v => keys[i] = v); const x = $('.q2-clx', r); if (x) x.addEventListener('click', e => { e.preventDefault(); keys.splice(i, 1); draw(); }); gk.appendChild(r); });
-    if (adv) { const add = h(`<button class="chipb">+ Ajouter un regroupement</button>`); add.addEventListener('click', e => { e.preventDefault(); keys.push(T.cols[0].n); draw(); }); gk.appendChild(add); }
+    keys.forEach((k, i) => { const r = h(`<div class="q2-row"><button class="sel-box"></button>${adv && keys.length > 1 ? `<button class="q2-clx">${I.close.replace('<svg', '<svg width="12" height="12"')}</button>` : ''}</div>`); this.q2sel($('.sel-box', r), () => T.cols.map(c => [c.n, c.n]), k, v => { keys[i] = v; ping(); }); const x = $('.q2-clx', r); if (x) x.addEventListener('click', e => { e.preventDefault(); keys.splice(i, 1); draw(); ping(); }); gk.appendChild(r); });
+    if (adv) { const add = h(`<button class="chipb">+ Ajouter un regroupement</button>`); add.addEventListener('click', e => { e.preventDefault(); keys.push(T.cols[0].n); draw(); ping(); }); gk.appendChild(add); }
     const ga = $('.q2-ga', body); ga.innerHTML = '';
     (adv ? aggs : aggs.slice(0, 1)).forEach((a, i) => {
       const r = h(`<div class="q2-agg"><label>Nouveau nom de colonne<input value="${esc(a.as)}" spellcheck="false" autocapitalize="off" autocomplete="off"></label><label>Opération<button class="sel-box" data-k="op"></button></label><label>Colonne<button class="sel-box" data-k="col"></button></label></div>`);
-      $('input', r).addEventListener('input', e => a.as = e.target.value);
-      this.q2sel($('[data-k="op"]', r), () => Object.entries(PQE.AGGS), a.op, v => { a.op = v; draw(); });
+      $('input', r).addEventListener('input', e => { a.as = e.target.value; clearTimeout(this._gpt); this._gpt = setTimeout(ping, 350); });
+      this.q2sel($('[data-k="op"]', r), () => Object.entries(PQE.AGGS), a.op, v => { a.op = v; draw(); ping(); });
       const cb = $('[data-k="col"]', r);
       if (['count', 'countd', 'all'].includes(a.op)) { cb.disabled = true; cb.textContent = '—'; a.col = null; }
-      else { if (!a.col) a.col = T.cols[0].n; this.q2sel(cb, () => T.cols.map(c => [c.n, c.n]), a.col, v => a.col = v); }
+      else { if (!a.col) a.col = T.cols[0].n; this.q2sel(cb, () => T.cols.map(c => [c.n, c.n]), a.col, v => { a.col = v; ping(); }); }
       ga.appendChild(r);
     });
-    if (adv) { const add = h(`<button class="chipb">+ Ajouter une agrégation</button>`); add.addEventListener('click', e => { e.preventDefault(); aggs.push({ as: 'Nombre' + (aggs.length + 1), op: 'count', col: null }); draw(); }); ga.appendChild(add); }
+    if (adv) { const add = h(`<button class="chipb">+ Ajouter une agrégation</button>`); add.addEventListener('click', e => { e.preventDefault(); aggs.push({ as: 'Nombre' + (aggs.length + 1), op: 'count', col: null }); draw(); ping(); }); ga.appendChild(add); }
   };
-  $$('[name="gm"]', body).forEach(r => r.addEventListener('change', () => { adv = r.value === 'a' && r.checked ? true : r.value === 'b' && r.checked ? false : adv; if (!adv) { keys.splice(1); aggs.splice(1); } draw(); }));
+  $$('[name="gm"]', body).forEach(r => r.addEventListener('change', () => { adv = r.value === 'a' && r.checked ? true : r.value === 'b' && r.checked ? false : adv; if (!adv) { keys.splice(1); aggs.splice(1); } draw(); ping(); }));
   draw();
   this.q2dlg('Regrouper par', body, () => {
     const list = (adv ? aggs : aggs.slice(0, 1)).map(a => ({ as: (a.as || '').trim(), op: a.op, col: a.col }));
@@ -399,7 +405,9 @@ P_.q2mergeDialog = function (asNew, step, edit) {
     ms.className = 'q2-ms ok'; ms.textContent = fr(`La sélection correspond à ${n} ligne${n > 1 ? 's' : ''} sur ${L.rows.length} de la première table.`);
   };
   const draw = () => { prev(left, lk, 'l'); prev(right, rk, 'r'); status(); };
-  if (asNew) this.q2sel($('[data-k="l"]', body), () => tables.map(q => [q.id, q.name]), left, k => { left = k; lk = []; draw(); });
+  /* État lisible de la boîte, pour guider pas à pas */
+  this.q2mst = { get left() { return left; }, get right() { return right; }, get lk() { return lk.slice(); }, get rk() { return rk.slice(); }, get kind() { return kind; } };
+  if (asNew) this.q2sel($('[data-k="l"]', body), () => tables.map(q => [q.id, q.name]), left, k => { left = k; lk = []; draw(); this.q2emit('q2.mergeTable', { left: k }); });
   this.q2sel($('[data-k="r"]', body), () => tables.filter(q => asNew || q.id !== cur.id).map(q => [q.id, q.name]), right, k => { right = k; rk = []; draw(); this.q2emit('q2.mergeTable', { right: k }); });
   this.q2sel($('[data-k="j"]', body), () => Object.entries(PQE.JOINS).map(([k, v]) => [k, v[0]]), kind, k => { kind = k; this.q2emit('q2.mergeKind', { kind: k }); });
   $('[data-k="fz"]', body).addEventListener('change', e => { fuzzy = e.target.checked; this.q2emit('q2.mergeFuzzy', { on: fuzzy }); });
@@ -448,7 +456,7 @@ P_.q2appendDialog = function (asNew) {
     else if (u) { e.preventDefault(); const i = +u.dataset.up; if (i > 0) { const [x] = many.splice(i, 1); many.splice(i - 1, 0, x); draw(); } }
     else if (r) { e.preventDefault(); many.splice(+r.dataset.rm, 1); draw(); this.q2emit('q2.appendPick', { list: many.slice() }); }
   });
-  $$('[name="am"]', body).forEach(r => r.addEventListener('change', () => { if (r.checked) { mode = r.value; draw(); } }));
+  $$('[name="am"]', body).forEach(r => r.addEventListener('change', () => { if (r.checked) { mode = r.value; draw(); this.q2emit('q2.appendPick', { list: many.slice(), mode }); } }));
   draw();
   this.q2dlg(asNew ? 'Ajouter des requêtes comme nouvelle' : 'Ajouter', body, () => {
     const list = mode === 'two' ? [asNew ? first : cur.id, second] : many.slice();
@@ -563,6 +571,7 @@ const DET = [['200', 'Selon les 200 premières lignes'], ['all', 'Selon le jeu d
 P_.q2csvDialog = function (file, step, edit, onDone) {
   const f = files()[file];
   const st = { enc: step ? step.enc : (f.bom ? 65001 : 1252), delim: step ? step.delim : ',', detect: '200' };
+  this.q2cst = st;
   const body = h(`<div class="csv-wrap"><div class="csv-opts"><div><label>Origine du fichier</label><button class="sel-box" data-x="enc"></button></div><div><label>Délimiteur</label><button class="sel-box" data-x="delim"></button></div>${step ? '' : '<div style="grid-column:1/-1"><label>Détection du type de données</label><button class="sel-box" data-x="detect"></button></div>'}</div><div class="nav-prev q2-csvp"></div></div>`);
   const draw = () => {
     const lines = PQE.parseCsv(PQE.decodeAs(f.text, st.enc, f.bom), st.delim);

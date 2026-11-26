@@ -42,8 +42,16 @@ const mergeCheck = (x, p, kind, labels) => {
   if (s.kind !== kind) return x.oops(s.kind === 'inner' && labels.inner ? labels.inner : '', kind === 'leftouter' ? 'Choisis Externe gauche : toutes les interventions, avec leurs correspondances.' : 'Choisis Anti gauche : les interventions sans aucune correspondance.');
   return true;
 };
-const mergeTodo = (x, kind, lbl) => [`Première table : ${I}. Deuxième : ${R}. Touche Cle_Equipement dans les deux aperçus, choisis ${lbl}, puis OK.`,
-  ['[data-k="l"]', `.menu [data-k="${(K2.q(x, I) || {}).id}"]`, '[data-k="r"]', `.menu [data-k="${(K2.q(x, R) || {}).id}"]`, '[data-mc="l|Cle_Equipement"]', '[data-mc="r|Cle_Equipement"]', '[data-k="j"]', `.menu [data-k="${kind}"]`, '[data-d="ok"]']];
+/* Fusion guidée pas à pas : une seule action à la fois */
+const mergeTodo = (x, kind, lbl) => {
+  const m = x.pbi.q2mst || {}, li = (K2.q(x, I) || {}).id, ri = (K2.q(x, R) || {}).id;
+  if (m.left !== li) return [`Première table : ${I}.`, ['[data-k="l"]', `.menu [data-k="${li}"]`]];
+  if (m.right !== ri) return [`Deuxième table : ${R}.`, ['[data-k="r"]', `.menu [data-k="${ri}"]`]];
+  if ((m.lk || []).join('|') !== 'Cle_Equipement') return ['Touche Cle_Equipement dans le premier aperçu.', ['[data-mc="l|Cle_Equipement"]']];
+  if ((m.rk || []).join('|') !== 'Cle_Equipement') return ['Touche Cle_Equipement dans le second aperçu.', ['[data-mc="r|Cle_Equipement"]']];
+  if (m.kind !== kind) return [`Type de jointure : ${lbl}.`, ['[data-k="j"]', `.menu [data-k="${kind}"]`]];
+  return ['Valide avec OK.', ['[data-d="ok"]']];
+};
 
 const def = {
   id: 209,
@@ -105,7 +113,7 @@ const def = {
           for (const s of FILES) {
             const q = byFile(s.f);
             if (!q) {
-              if (pbi.dlgKind === 'q2csv') return ['Garde l’origine 65001 : Unicode (UTF-8). Délimiteur Point-virgule, et Ne pas détecter les types de données : ils seront définis dans la préparation. Puis OK.', ['[data-x="delim"]', '.menu [data-k=";"]', '[data-x="detect"]', '.menu [data-k="none"]', '[data-d="ok"]']];
+              if (pbi.dlgKind === 'q2csv') return K2.csvTodo(x);
               if (pbi.dlgKind === 'q2open') return [`Ouvre Maintenance › Atelier_M209, puis ${s.f}.`, W.nav(DIR, s.f)];
               return [`Importe ${s.f} : Accueil › Nouvelle source › Texte/CSV.`, ['[data-q="tab:Accueil"]', '[data-q="cmd:newsource"]', '.menu [data-k="csv"]']];
             }
@@ -160,7 +168,6 @@ const def = {
         return v.t === 2200 ? true : ['', 'Additionne les huit coûts de Cout_HT.'];
       });
       await K2.ask(x, 'Six lignes pour cinq codes dans le référentiel. Que faire de la ligne en trop ?', [{ t: 'Rien pour l’instant : examiner d’abord cette répétition', ok: true }, { t: 'La supprimer tout de suite', err: 'Référentiel réduit immédiatement à cinq lignes' }]);
-      await K2.ask(x, 'Ces interventions datent de juin 2025. Les relie-t-on au registre de mai 2026 ?', [{ t: 'Non : l’atelier reste à part, sur juin 2025', ok: true }, { t: 'Oui, c’est la même maintenance', err: 'Périmètre 2026 utilisé' }]);
       await x.ok('Deux sources brutes intactes, deux préparations typées : 8 interventions pour 2 200 € HT, et un référentiel de 6 lignes.');
     }, avance: SET(1) },
 
@@ -185,7 +192,7 @@ const def = {
       await K2.num(x, 'Profil de Cle_Equipement, interventions.', [{ id: 'a', label: 'Lignes EQ01' }, { id: 'b', label: 'Lignes EQ02' }, { id: 'v', label: 'Vide' }], v => v.a === 2 && v.b === 2 && v.v === 1 ? true : ['', 'Lis la distribution des valeurs et la ligne Vide.']);
       await x.pixel('Côté référentiel, regroupe par clé dans une vue temporaire : chaque clé ne devrait apparaître qu’une fois.');
       await K2.tmp(x, { src: R, flag: 'tmp209', kind: 'cles', ops: ['group'],
-        next: t => t.steps.some(s => s.op === 'group') ? true : ['Sélectionne Cle_Equipement, puis Transformer › Regrouper par : Nombre de lignes, puis OK.', ['[data-q="hd:Cle_Equipement"]', '[data-q="tab:Transformer"]', '[data-q="cmd:group"]', '[data-d="ok"]']],
+        next: t => t.steps.some(s => s.op === 'group') ? true : K2.groupTodo(x, { col: 'Cle_Equipement', keys: ['Cle_Equipement'], aggs: [{ as: 'Nombre', op: 'count' }] }),
         tries: (p, t) => {
           if (p.kind === 'add' && p.op === 'distinct') return x.oops('Doublon du référentiel supprimé sans preuve');
           if (p.kind === 'add' && p.op === 'group') {
@@ -211,7 +218,6 @@ const def = {
       } });
       x.app('pbi');
       await K2.ask(x, 'EQ99 ressemble à EQ09. Active-t-on la correspondance approximative ?', [{ t: 'Non : un code attend une correspondance exacte', ok: true }, { t: 'Oui, pour le rattraper', err: 'Rapprochement approximatif activé' }]);
-      await K2.ask(x, 'Pourquoi la même règle de clé des deux côtés ?', [{ t: 'Pour comparer des valeurs préparées de la même façon', ok: true }, { t: 'Par habitude : un seul côté suffirait', err: 'Nettoyage effectué d’un seul côté' }]);
       await x.ok('Des répétitions normales côté événements, une clé en double côté référentiel, une clé absente et un code à vérifier : quatre situations distinctes, avant toute fusion.');
     }, avance: SET(2) },
 
@@ -230,7 +236,7 @@ const def = {
           if (!K2.shown(x, d.name)) return K2.showTodo(x, d.name);
           if (d.name !== D) return qrenTodo(D);
           if (d.load !== false) return loadTodo;
-          if (K2.cols(K2.T(x, d.name)).includes(R)) return [`La colonne fusionnée porte le nom du référentiel. Renomme ${R} en Correspondances : sélectionne-la, puis Transformer › Renommer.`, [`[data-q="hd:${R}"]`, '[data-q="tab:Transformer"]', '[data-q="cmd:rename"]', '.dlg input', '[data-d="ok"]']];
+          if (K2.cols(K2.T(x, d.name)).includes(R)) return [`Renomme la colonne ${R} en Correspondances : Transformer › Renommer.`, [`[data-q="hd:${R}"]`, '[data-q="tab:Transformer"]', '[data-q="cmd:rename"]', '.dlg input', '[data-d="ok"]']];
           return true;
         },
         tries: p => {
@@ -264,11 +270,10 @@ const def = {
         tries: p => { if (p.kind === 'add' && p.op === 'custom' && new RegExp(R).test(p.step.src || '')) return x.oops('Compte réalisé sur le référentiel entier'); if (p.kind === 'add' && p.op === 'expand') return x.oops('', 'Pas encore : on compte avant de développer.'); },
         check: T => K2.find(T, 'ID_Intervention', 'J004').Nb_Correspondances === 2 && K2.find(T, 'ID_Intervention', 'J007').Nb_Correspondances === 0 ? true : ['', 'Vérifie la formule collée.'] });
       await K2.num(x, 'Nombre de correspondances.', [{ id: 'a', label: 'J004' }, { id: 'b', label: 'J007' }, { id: 'c', label: 'J008' }], v => v.a === 2 && v.b === 0 && v.c === 0 ? true : (v.b === 1 || v.c === 1) ? ['Table vide traitée comme correspondance valide'] : ['', 'Lis Nb_Correspondances sur chaque ligne.']);
-      await K2.ask(x, 'Toutes les cellules affichaient Table. Contenaient-elles la même chose ?', [{ t: 'Non : zéro, une ou deux lignes selon l’intervention', ok: true }, { t: 'Oui, une table chacune', err: 'Toutes les cellules Table considérées identiques' }]);
       await x.pixel('Observons le risque dans une branche de démonstration : on y développe les correspondances sans protection.');
       const demo = () => tmps(P()).find(q => q.tmp209 === 'demo');
       await K2.tmp(x, { src: D, flag: 'tmp209', kind: 'demo', ops: ['expand'],
-        next: t => t.steps.some(s => s.op === 'expand') ? true : ['Touche l’icône de développement à droite de l’en-tête Correspondances, garde les colonnes proposées, puis OK.', ['[data-q="exp:Correspondances"]', '[data-d="ok"]']],
+        next: t => t.steps.some(s => s.op === 'expand') ? true : x.pbi.dlgKind === 'q2expand' ? ['Garde les colonnes proposées, puis OK.', ['[data-d="ok"]']] : ['Touche l’icône de développement de l’en-tête Correspondances.', ['[data-q="exp:Correspondances"]']],
         tries: (p, t) => {
           if (p.kind === 'add' && p.op === 'distinct') return x.oops('Doublon retiré après développement au hasard');
           if (p.kind === 'add' && (p.op === 'removeCols' || p.op === 'selectCols')) return x.oops('Colonne de coût supprimée pour cacher l’écart');
@@ -277,8 +282,7 @@ const def = {
       await K2.num(x, 'Dans la branche développée…', [{ id: 'l', label: 'Lignes' }, { id: 'j', label: 'Lignes de J004' }], v => v.l === 9 && v.j === 2 ? true : ['', 'Lis la barre d’état, puis compte les lignes J004.']);
       await K2.ask(x, 'J004 représente-t-il deux interventions ?', [{ t: 'Non : le développement a répété la même intervention', ok: true }, { t: 'Oui : deux lignes, deux interventions', err: 'J004 déclaré deux interventions' }]);
       await K2.num(x, 'Les huit interventions coûtent 2 200 €, dont 250 € pour J004. Quel total HT afficherait cette branche ?', [{ id: 't', label: 'Total HT', unit: '€' }], v => v.t === 2450 ? true : v.t === 2200 ? ['', 'J004 compte deux fois dans la branche : son coût aussi.'] : ['', '2 200 €, plus la répétition de J004.']);
-      await K2.ask(x, '2 450 €, est-ce le coût des interventions ?', [{ t: 'Non : elles coûtent 2 200 € ; les 250 € de plus viennent de la répétition', ok: true }, { t: 'Oui, c’est le nouveau total', err: '2450 € présenté comme coût source' }]);
-      await K2.ask(x, 'Que fait-on de cette branche ?', [{ t: 'On la supprime : elle a servi à montrer le risque', ok: true }, { t: 'On la garde comme résultat enrichi', err: 'Branche multipliée conservée comme résultat final' }]);
+      await x.pixel('2 450 € au lieu de 2 200 € : la répétition de J004 gonfle le total. Cette branche a servi à le montrer, on la supprime.');
       await K2.work(x, {
         cur: D,
         next: () => { const t = demo(); return t ? [`Supprime la branche ${t.name} : volet Requêtes, ⋯, Supprimer.`, ['[data-q="qd"]', K2.qmenu(x, t), '.menu [data-k="del"]', '[data-d="del"]']] : true; },
@@ -309,9 +313,7 @@ const def = {
       await K2.prof(x, D, 'Statut_Rapprochement');
       await K2.num(x, 'Répartition des statuts.', [{ id: 'u', label: 'Correspondance unique' }, { id: 'a', label: 'Référentiel ambigu' }, { id: 'i', label: 'Code inconnu' }, { id: 'c', label: 'Clé absente' }], v => v.u === 5 && v.a === 1 && v.i === 1 && v.c === 1 ? true : ['', 'Lis la distribution des valeurs.']);
       await K2.ask(x, 'Victoria : « J004 concerne Sky Tower. Pouvons-nous l’attribuer à Malik, puisqu’il apparaît en premier dans le référentiel ? »', [{ t: 'Non : l’ordre du fichier ne prouve pas l’affectation. J004 garde son coût, son enrichissement attend', ok: true }, { t: 'Oui, la première ligne fait foi', err: 'Malik choisi parce qu’il apparaît avant Lina' }, { t: 'On écrit « Malik/Lina »', err: 'Deux responsables fusionnés dans une chaîne puis validés' }]);
-      await K2.ask(x, 'J007 et J008 ?', [{ t: 'Deux causes : un code renseigné mais inconnu, et une clé absente', ok: true }, { t: 'Un seul cas : un code erroné', err: 'J007 et J008 regroupés comme code erroné' }, { t: 'Remplacer EQ99 par EQ09, le code le plus proche', err: 'EQ99 remplacé par le code le plus proche' }]);
       await K2.ask(x, 'Pour J004, quelle question poser au métier ?', [{ t: 'Quel responsable s’applique à la date de l’intervention, et faut-il des dates de validité ?', ok: true }, { t: 'Aucune : on garde le premier responsable', err: 'Premier responsable conservé automatiquement' }, { t: 'Aucune : on fixe une validité au 1er juin', err: 'Date de validité inventée' }]);
-      await K2.ask(x, 'Et ces trois dossiers ?', [{ t: 'Ils restent dans la table, ouverts, avec leur question', ok: true }, { t: 'On les retire jusqu’à confirmation', err: 'Trois dossiers supprimés' }, { t: 'J004 est réglé : il a des correspondances', err: 'J004 marqué résolu' }]);
       x.app('q209', K.lesson('Questions métier', 'Trois dossiers ouverts, aucune réponse inventée', `<div class="k2-facts" style="grid-template-columns:1fr">${[['J004 · Sky Tower', 'Quel responsable s’applique à la date de l’intervention ? Le référentiel doit-il porter des dates de validité ?'], ['J007 · EQ99', 'Code valide absent du référentiel, ou erreur de saisie ?'], ['J008 · sans code', 'Quel équipement figure sur le bon d’intervention ?']].map(i => `<div><b>${esc(fr(i[0]))}</b><span>${esc(fr(i[1]))}</span></div>`).join('')}</div>`));
       await x.ok('Cinq correspondances uniques et trois dossiers à investiguer, chacun avec sa cause. Aucune confirmation n’est fournie : ils restent ouverts.');
       x.app('pbi');
@@ -337,8 +339,8 @@ const def = {
         cur: E, edit: [E], ops: ['expand', 'removeCols'],
         next: () => {
           if (!K2.shown(x, E)) return K2.showTodo(x, E);
-          if (has('Description')) return ['Touche l’icône de développement de Description, décoche Utiliser le nom de la colonne d’origine comme préfixe, puis OK.', ['[data-q="exp:Description"]', '[data-x="prefix"]', '[data-d="ok"]']];
-          if (has('Correspondances')) return ['Retire la colonne de tables du résultat : sélectionne Correspondances, puis Accueil › Supprimer les colonnes.', ['[data-q="hd:Correspondances"]', '[data-q="tab:Accueil"]', '[data-q="cmd:rmcols"]', '.menu [data-k="rm"]']];
+          if (has('Description')) return x.pbi.dlgKind === 'q2expand' ? ['Décoche le préfixe (nom de la colonne d’origine), puis OK.', ['[data-x="prefix"]', '[data-d="ok"]']] : ['Touche l’icône de développement de Description.', ['[data-q="exp:Description"]']];
+          if (has('Correspondances')) return ['Supprime la colonne Correspondances : Accueil › Supprimer les colonnes.', ['[data-q="hd:Correspondances"]', '[data-q="tab:Accueil"]', '[data-q="cmd:rmcols"]', '.menu [data-k="rm"]']];
           return true;
         },
         tries: p => {
@@ -361,7 +363,6 @@ const def = {
       await x.pixel('Les trois attributs développés sont du texte.');
       await K2.types(x, { q: E, groups: [[['Attraction', 'Zone', 'Responsable'], 'text']] });
       await K2.num(x, `État de ${E}.`, [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 9 ? ['Résultat de neuf lignes accepté'] : v.l === 8 && v.c === 11 ? true : ['', 'Lis la barre d’état.']);
-      await K2.ask(x, 'Coût HT de J004 dans le résultat ?', [{ t: '250 €, comme dans la source', ok: true }, { t: 'null : il n’est pas enrichi', err: 'Coûts remplacés par null sur les cas non appariés' }]);
       await K2.ask(x, 'Pourquoi Responsable est-il vide pour J007 ?', [{ t: 'Son statut l’explique : Code inconnu', ok: true }, { t: 'On ne peut pas le savoir', err: 'Nulls ajoutés sans statut' }]);
       await x.ok('Huit interventions, onze colonnes, 2 200 € HT. Cinq sont décrites, trois gardent des attributs vides expliqués par leur statut. Personne n’a été choisi au hasard.');
     }, avance: SET(6) },
@@ -376,7 +377,7 @@ const def = {
         cur: I, edit: [], editNew: true,
         next: () => {
           const a = anti();
-          if (!a) return pbi.dlgKind === 'q2merge' ? mergeTodo(x, 'leftanti', 'Anti gauche') : ['Une vue temporaire : Accueil › Fusionner des requêtes › Fusionner des requêtes comme nouvelle.', mergeRibbon];
+          if (!a) return pbi.dlgKind === 'q2merge' ? mergeTodo(x, 'leftanti', 'Anti gauche') : ['Vue temporaire : Accueil › Fusionner des requêtes › Fusionner des requêtes comme nouvelle.', mergeRibbon];
           if (!K2.shown(x, a.name)) return K2.showTodo(x, a.name);
           if (a.load !== false) return ['Désactive le chargement de cette vue temporaire.', ['.q2-qname', '.menu [data-k="load"]']];
           return true;
@@ -391,7 +392,6 @@ const def = {
         }
       });
       await K2.num(x, 'Lis la vue anti-jointure.', [{ id: 'l', label: 'Lignes' }], v => v.l === 2 ? true : ['', 'Lis la barre d’état.']);
-      await K2.ask(x, 'J004 y figure-t-il ?', [{ t: 'Non : il a deux correspondances, pas zéro', ok: true }, { t: 'Oui, il devrait', err: 'J004 attendu dans l’anti-jointure' }]);
       await K2.ask(x, 'J007 et J008 sont-ils tous les dossiers à revoir ?', [{ t: 'Non : il faut y ajouter J004, l’ambigu', ok: true }, { t: 'Oui', err: 'Liste de deux lignes considérée comme totalité des dossiers à revoir' }]);
       await x.pixel('L’ambiguïté se retrouve par le comptage : une vue du diagnostic, filtrée sur plus d’une correspondance.');
       const onlyJ4 = T => !!T && T.rows.length === 1 && T.rows[0].ID_Intervention === 'J004';
@@ -404,7 +404,7 @@ const def = {
       await x.pixel('Réconcilions enfin le résultat enrichi : une vue regroupée par statut, avec le nombre d’interventions et la somme du coût HT.');
       const rec = () => tmps(P()).find(q => q.tmp209 === 'rec');
       await K2.tmp(x, { src: E, flag: 'tmp209', kind: 'rec', ops: ['group'],
-        next: t => t.steps.some(s => s.op === 'group') ? true : ['Transformer › Regrouper par, Avancé : Statut_Rapprochement ; Nombre (Nombre de lignes) et Cout_HT_Total (Somme de Cout_HT).', ['[data-q="hd:Statut_Rapprochement"]', '[data-q="tab:Transformer"]', '[data-q="cmd:group"]', 'input[name="gm"][value="a"]', '[data-d="ok"]']],
+        next: t => t.steps.some(s => s.op === 'group') ? true : K2.groupTodo(x, { col: 'Statut_Rapprochement', keys: ['Statut_Rapprochement'], aggs: [{ as: 'Nombre', op: 'count' }, { as: 'Cout_HT_Total', op: 'sum', col: 'Cout_HT' }] }),
         tries: (p, t) => {
           if (p.kind === 'add' && p.op === 'distinct') return x.oops('Doublons supprimés pour retrouver huit lignes');
           if (p.kind !== 'add' || p.op !== 'group') return;
@@ -425,8 +425,6 @@ const def = {
       const m = v => (v === null || v === undefined ? '—' : esc(K2.n(Math.round(v))));
       x.app('rec209', K.lesson('Réconciliation', 'Chaque intervention, avant et après la fusion', `<table class="tbl" style="width:100%"><thead><tr><th><span class="thc">ID</span></th><th style="text-align:right"><span class="thc">HT source</span></th><th style="text-align:right"><span class="thc">HT final</span></th><th><span class="thc">Statut</span></th></tr></thead><tbody>${(S ? S.rows : []).map(r => { const f = by[r.ID_Intervention] || {}; return `<tr><td>${esc(r.ID_Intervention)}</td><td style="text-align:right">${m(r.Cout_HT)}</td><td style="text-align:right">${m(f.Cout_HT)}</td><td><small>${esc(fr(f.Statut_Rapprochement || '—'))}</small></td></tr>`; }).join('')}</tbody></table>`));
       await K2.ask(x, 'Comparer les deux totaux aurait-il suffi ?', [{ t: 'Non : deux écarts peuvent se compenser. On compare aussi chaque identifiant', ok: true }, { t: 'Oui : 2 200 € des deux côtés', err: 'Somme seule contrôlée' }]);
-      await K2.ask(x, 'EQ05 n’a aucune intervention. En manque-t-il une ?', [{ t: 'Pas forcément : l’échantillon peut ne pas en contenir', ok: true }, { t: 'Oui, il en manque une', err: 'EQ05 considéré comme intervention manquante certaine' }]);
-      await K2.ask(x, 'Que deviennent les vues anti-jointure et ambiguïté ?', [{ t: 'Des vues de diagnostic, pas la table finale', ok: true }, { t: 'L’anti-jointure remplace la table enrichie', err: 'Anti-jointure conservée comme table finale' }]);
       x.app('pbi');
       await x.ok('Deux absences par l’anti-jointure, une ambiguïté par le comptage, huit interventions et 2 200 € HT, identifiant par identifiant.');
     }, avance: SET(6) },
@@ -441,8 +439,6 @@ const def = {
       await K2.num(x, `État de ${E}.`, [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 8 && v.c === 11 ? true : ['', 'Lis la barre d’état.']);
       await look(LIB);
       await K2.num(x, 'Registre principal de mai 2026.', [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 1099 && v.c === 29 ? true : v.l === 1107 ? ['Atelier ajouté au registre principal'] : ['', 'Le registre n’a pas bougé : lis sa barre d’état.']);
-      await look(ANN);
-      await K2.num(x, 'Atelier annuel de la mission 208.', [{ id: 'l', label: 'Lignes' }, { id: 'c', label: 'Colonnes' }], v => v.l === 96 && v.c === 11 ? true : ['', 'Lis sa barre d’état.']);
       await K2.ask(x, 'Corrige-t-on le référentiel brut en retirant la ligne EQ04 de Malik ?', [{ t: 'Non : sans confirmation, la source reçue reste telle quelle', ok: true }, { t: 'Oui, pour que la fusion soit propre', err: 'Référentiel brut corrigé sans preuve' }]);
       await K2.ask(x, 'Victoria : « Qu’est-ce qui prouve que l’enrichissement est fiable ? »', [{ t: 'Les contrôles constatés : 8 interventions, 2 200 € HT, 5 statuts uniques et 3 dossiers ouverts', ok: true }, { t: 'La fusion s’est exécutée sans erreur', err: 'Réussite déclarée sans contrôle' }]);
       await K2.final(x, {

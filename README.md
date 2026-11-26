@@ -26,6 +26,10 @@ Dix missions dans les archives techniques du parc, de « Le fichier catastrophe 
 
 Chaque manipulation est vérifiée sur l'état réel des requêtes calculé par un moteur M simplifié (`js/pqengine.js`).
 
+## L'écran d'exercice
+
+Le logiciel occupe toute la largeur sous l'en-tête. En bas, une seule zone réunit la dernière réplique, la consigne en jaune et les questions, qui poussent l'éditeur vers le haut au lieu de le recouvrir. Dès que l'on agit, la réplique s'efface ; la poignée rouvre toute la conversation de l'exercice. Dans les boîtes de dialogue, la consigne avance pas à pas, une action à la fois. Power Query s'ouvre directement à chaque exercice du module 2, en 13 à 14 px, avec des cibles tactiles plus grandes ; le canevas du rapport se zoome (Ajuster, 150 %, 200 %).
+
 ## Technique
 
 HTML, CSS et JavaScript sans dépendance ni étape de build. Progression enregistrée dans le navigateur (`localStorage`).

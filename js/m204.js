@@ -80,7 +80,7 @@ const def = {
           if (!t) return [`Volet Requêtes : ⋯ à côté de ${NAME}, puis Référence.`, ['[data-q="qd"]', K2.qmenu(x, D()), '.menu [data-k="ref"]']];
           if (t.load !== false) return ['Désactive le chargement de cette référence temporaire.', ['.q2-qname', '.menu [data-k="load"]']];
           if (!K2.shown(x, t.name)) return K2.showTodo(x, t.name);
-          if (!t.steps.some(s => s.op === 'group')) return ['Sélectionne ID_Intervention, puis Accueil › Regrouper par. Nouvelle colonne : Nombre_Lignes, opération Nombre de lignes.', ['[data-q="hd:ID_Intervention"]', '[data-q="tab:Accueil"]', '[data-q="cmd:group"]', '.q2-agg input', '[data-d="ok"]']];
+          if (!t.steps.some(s => s.op === 'group')) return K2.groupTodo(x, { col: 'ID_Intervention', tab: 'Accueil', keys: ['ID_Intervention'], aggs: [{ as: 'Nombre_Lignes', op: 'count' }] });
           if (!t.steps.some(s => s.op === 'filter')) return ['Filtre Nombre_Lignes : Filtres numériques › est supérieur à 1.', ['[data-q="flt:Nombre_Lignes"]', '[data-f="adv"]', '[data-k="o1"]', '[data-k="v1"]', '[data-d="ok"]']];
           return true;
         },
@@ -138,7 +138,6 @@ const def = {
       await x.pixel('Quatre lignes. Fais défiler l’aperçu vers la droite pour comparer les deux M0899, colonne par colonne.');
       await K2.num(x, 'Quelles positions d’origine portent les deux lignes M0899 ?', [{ id: 'a', label: 'Première Ligne_Source' }, { id: 'b', label: 'Seconde Ligne_Source' }], v => v.a === 906 && v.b === 907 ? true : ['', 'Lis la colonne Ligne_Source, tout à droite de l’aperçu.']);
       await K2.ask(x, 'Entre ces deux lignes, quelles colonnes sources diffèrent ?', [{ t: 'Aucune : seule Ligne_Source change', ok: true }, { t: 'Ligne_Source : les lignes sont donc différentes', err: 'Lignes déclarées différentes à cause de l’index' }, { t: 'Le commentaire', err: 'Commentaire oublié', msg: 'Les deux lignes portent le même commentaire : Bon BT-0899.' }]);
-      await K2.ask(x, 'Ces deux lignes prouvent-elles un double paiement de 630 € ?', [{ t: 'Non : elles montrent deux positions dans l’export, pas deux règlements', ok: true }, { t: 'Oui, 1 260 € ont été payés', err: 'Deux paiements annoncés' }]);
       await x.ok('Même contenu métier, deux positions dans l’export. L’origine de cette répétition doit être confirmée avant tout retrait.');
     } },
 
@@ -160,7 +159,6 @@ const def = {
         return ['', `Il manque des différences : regarde aussi ${miss[0]}.`];
       });
       await K2.ask(x, 'Quel cas représente M0949 ?', [{ t: 'Une collision d’identifiant : deux interventions possibles sous un même numéro', ok: true }, { t: 'Une copie à supprimer', err: 'Suppression de la seconde ligne' }, { t: 'Rien à signaler, puisque les lignes diffèrent', err: 'Collision ignorée parce que les lignes diffèrent' }, { t: 'Il suffit de renuméroter la seconde en M0950', err: 'Remplacement automatique par M0950' }]);
-      await K2.ask(x, 'Le commentaire « Deuxième passage ? » prouve-t-il un deuxième passage ?', [{ t: 'Non : il formule encore une hypothèse', ok: true }, { t: 'Oui', err: 'Deuxième passage affirmé comme certain' }]);
       await x.ok('Les deux lignes diffèrent sur plusieurs champs : une suppression fondée sur l’identifiant seul serait injustifiée. Les deux restent, la question est inscrite au registre.');
     } },
 
@@ -185,7 +183,6 @@ const def = {
         return x.oops('', 'Relis la pièce : une seule copie est confirmée.');
       } });
       EX5(pbi.P);
-      await K2.ask(x, 'Que vaut la pièce CONF-M204-01 ?', [{ t: 'Une pièce du scénario de formation, limitée à ces deux dossiers', ok: true }, { t: 'Une preuve réelle obtenue auprès du service maintenance', err: 'Pièce fictive présentée comme preuve réelle externe' }, { t: 'Une garantie sur tout le fichier', err: 'Justificatif confondu avec une garantie sur tout le fichier' }]);
       x.app('pbi');
       await x.ok('Une seule suppression autorisée : Ligne_Source 907. M0949 garde ses deux lignes, et la correction de sa clé reste une décision à part.');
     }, avance: EX5 },
@@ -250,7 +247,6 @@ const def = {
         return ['', 'Distinct et Unique sont dans les statistiques ; M0949 apparaît toujours deux fois.'];
       });
       await K2.ask(x, 'La copie retirée portait 525 € HT et 630 € TTC. Que représentent ces montants ?', [{ t: 'Le contenu d’une copie de l’export, pas une économie', ok: true }, { t: '630 € d’économies réalisées', err: '630 € annoncés comme économie' }, { t: 'La preuve que le TTC global est réconcilié', err: 'TTC global présenté comme réconcilié' }]);
-      await K2.ask(x, 'Combien de dossiers incomplets de la mission 203 reste-t-il ?', [{ t: 'Toujours 7 : aucun ne se trouvait sur la copie', ok: true }, { t: '6', err: 'Dossiers incomplets réduits' }]);
       await x.ok('1 099 lignes, 1 098 identifiants, 1 097 présents une seule fois, un groupe répété : M0949. Exactement une ligne retirée, aucune valeur modifiée.');
     } },
 

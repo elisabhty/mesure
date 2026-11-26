@@ -393,7 +393,7 @@ const def = {
       const step = () => {
         if (phase === 0) { x.todo('Convertis Quantite_Brute en Nombre entier et Date_Brute en Date.'); x.guide('[data-a="pqtype:Quantite_Brute"]'); }
         else if (phase === 1) { x.todo('Touche chacune des deux cellules Error pour lire son détail.'); x.guide('.pq td.err'); }
-        else { x.todo('Sélectionne l’étape Source, puis remplace les deux valeurs brutes avec Remplacer les valeurs.'); x.guide(['[data-q="step:0"]', '[data-q="cmd:replace"]']); }
+        else { x.todo('Étape Source, puis Remplacer les valeurs sur les deux valeurs brutes.'); x.guide(['[data-q="step:0"]', '[data-q="cmd:replace"]']); }
       };
       step();
       await pqWait(x, {
