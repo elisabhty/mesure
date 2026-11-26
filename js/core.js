@@ -594,9 +594,18 @@ async function showRewards(def, t) {
     ${first ? '' : '<p class="rw-note">Mission rejouée : les récompenses n’ont pas été attribuées une deuxième fois.</p>'}
   </div>`));
   const zone = h('<div class="cta-zone"></div>');
-  zone.appendChild(btn('Voir mes nouvelles fiches', 'cta', () => showFiches(def, t)));
+  zone.appendChild(btn(def.bilan ? 'Voir mon bilan' : 'Voir mes nouvelles fiches', 'cta', () => def.bilan ? showBilan(def, t) : showFiches(def, t)));
   el.appendChild(zone);
   showLayer('reward');
+}
+/* Bilan individuel de l'épreuve finale (mission 110) */
+function showBilan(def, t) {
+  const el = $('#reward'); el.innerHTML = '';
+  el.appendChild(def.bilan());
+  const zone = h('<div class="cta-zone"></div>');
+  zone.appendChild(btn('Voir mes nouvelles fiches', 'cta', () => showFiches(def, t)));
+  el.appendChild(zone);
+  el.scrollTop = 0;
 }
 function showFiches(def, t) {
   const el = $('#reward'); el.innerHTML = '';

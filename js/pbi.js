@@ -287,7 +287,7 @@ class PBI {
     const r = h(`<div class="ribbon"><div class="rb-tabs"><button class="rb-tab file" data-a="file">Fichier</button>${tabs.map(t => `<button class="rb-tab ${t === st.tab ? 'on' : ''}" data-a="tab:${t}">${esc(t)}</button>`).join('')}</div><div class="rb-cmds"></div></div>`);
     const box = $('.rb-cmds', r);
     requestAnimationFrame(() => { const tb = $('.rb-tabs', r), on = $('.rb-tab.on', r); if (tb && on && on.offsetLeft + on.offsetWidth > tb.clientWidth) tb.scrollLeft = on.offsetLeft + on.offsetWidth - tb.clientWidth + 8; });
-    for (const c of cmds[st.tab] || []) {
+    for (const c of (cmds[st.tab] || []).concat(this.extraCmds ? this.extraCmds(st.tab) : [])) {
       if (c === '|') { box.appendChild(h('<i class="rb-sep"></i>')); continue; }
       if (c instanceof Element) { box.appendChild(c); continue; }
       box.appendChild(h(`<button class="rb-cmd ${c[3] || ''}" data-a="cmd:${c[0]}">${c[2]}<span>${esc(c[1])}</span></button>`));
@@ -321,7 +321,7 @@ class PBI {
     const cv = h(`<div class="canvas" data-a="canvas"><div class="page"></div></div>`);
     const pageEl = $('.page', cv);
     if (pg && pg.size) { pageEl.style.setProperty('--ar', pg.size[0] + ' / ' + pg.size[1]); pageEl.style.setProperty('--arn', pg.size[0] / pg.size[1]); }
-    if (pg && pg.bg) pageEl.style.background = pg.bg;
+    if (pg && this.pageLook) this.pageLook(pg, pageEl); else if (pg && pg.bg) pageEl.style.background = pg.bg;
     if (!pg) pageEl.appendChild(h(`<div class="page-empty">Aucune page</div>`));
     else {
       if (!pg.visuals.length) pageEl.appendChild(h(`<div class="page-empty">${esc(this.P.tables.length ? 'Construis ton visuel à partir des volets Visualisations et Données.' : 'Ajouter des données à votre rapport : les données chargées apparaîtront dans le volet Données.')}</div>`));
@@ -454,8 +454,8 @@ class PBI {
       case 'trow': if (this.gate('row', +v, b)) { st.selRow = +v; this.render(); } break;
       case 'mtable': if (this.gate('model.table', v, b)) { st.selModel = v; this.render(); } break;
       case 'mtool': this.emit('model.tool', v) === 'no' && shake(b); break;
-      case 'vis': e.stopPropagation(); if (this.gate('visual', v, b)) { st.selVis = v; this.render(); } break;
-      case 'canvas': if (e.target.closest('.vis')) return; this.emit('canvas', null); if (st.selVis || st.xsel) { st.selVis = null; st.xsel = null; this.render(); } break;
+      case 'vis': e.stopPropagation(); if (this.gate('visual', v, b)) { if (st.multiMode) st.multi = (st.multi || []).includes(v) ? st.multi.filter(x => x !== v) : [...(st.multi || []), v]; st.selVis = st.multiMode && !st.multi.includes(v) ? (st.multi[st.multi.length - 1] || null) : v; this.render(); } break;
+      case 'canvas': if (e.target.closest('.vis')) return; this.emit('canvas', null); if (st.selVis || st.xsel || (st.multi && st.multi.length)) { st.selVis = null; st.xsel = null; st.multi = []; this.render(); } break;
       case 'ptab': {
         const r = this.emit('page', v);
         if (r === 'no') { shake(b); break; }

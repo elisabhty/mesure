@@ -159,6 +159,7 @@ function guard(x, keep, extra = {}) {
     'viz.create': () => {}, 'chart.point': () => {}, 'table.sort2mode': () => {}, 'vis.focus': () => {}, 'page.renameStart': () => {}, 'table.rowsel': () => {},
     'filter.add': () => x.oops('', 'Garde le périmètre complet : aucun filtre n’est nécessaire ici.'), 'filter.set': () => x.oops('', 'Garde le périmètre complet : aucun filtre n’est nécessaire ici.'),
     'filter.type': () => x.oops('', 'Garde le périmètre complet : aucun filtre n’est nécessaire ici.'), 'filter.remove': () => {}, 'slicer': () => {}, 'interaction.set': () => x.oops('', 'Garde les interactions telles qu’elles sont.'),
+    'nav.page': () => {}, 'multi.mode': () => {}, 'view.opt': () => {}, 'clip.copy': () => {}, 'tab.start': () => {},
     'page.rename': () => {}, 'page.dup': () => x.oops('', 'Aucune page supplémentaire n’est nécessaire.'), 'page.del': () => x.oops('', 'Garde les pages du rapport.'),
     cmd: c => ['newmeasure', 'newcol'].includes(c) ? x.oops('', 'Pas de formule aujourd’hui : les agrégations suffisent.') : c === 'relations' ? x.oops('', 'Aucune relation n’est nécessaire ici.') : c === 'newpage' ? x.oops('', 'Aucune nouvelle page n’est nécessaire.') : undefined,
     'model.tool': () => x.oops('', 'Aucune relation n’est nécessaire ici.')

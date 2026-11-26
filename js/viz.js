@@ -198,7 +198,7 @@ for (const k of Object.keys(CHARTS)) R[k] = function (el, v) {
   if (p100) { const tot = d.cats.map((_, i) => series.reduce((a, s) => a + (s.values[i] || 0), 0)); series = series.map(s => ({ ...s, values: s.values.map((x, i) => tot[i] ? x / tot[i] * 100 : 0) })); }
   PBI.renderChart(el, {
     kind: k === 'stackedbar' ? 'bar' : p100 ? 'stacked' : k, stackedBar: k === 'stackedbar', title: v.title === undefined || v.title === null ? defaultTitle(d) : v.title,
-    cats: d.catLabels, series: series.map((s, i) => ({ name: s.name, values: s.values, color: cols[s.name] || (fm.color && !d.lg ? fm.color : null) })),
+    cats: d.catLabels, series: series.map((s, i) => ({ name: s.name, values: s.values, color: cols[s.name] || (fm.color && !d.lg ? fm.color : null) || (this.P.theme && this.P.theme.data ? this.P.theme.data[i % this.P.theme.data.length] : null) })),
     labels: !!fm.labels, legend: !!d.lg, showLegend: fm.legend !== false, totals: !!fm.totals && !p100, axisTitle: fm.axisTitle || '',
     fmt: p100 ? pctFmt : x => this.fmtValue(f0, x, { dec: fm.dec, units: fm.units || 'none' }, 'chart'),
     max: p100 ? 100 : undefined, ticks: p100 ? [0, 25, 50, 75, 100] : undefined, tickFmt: p100 ? pctFmt : undefined,
@@ -579,7 +579,7 @@ P_.visualEl = function (v) {
   return el;
 };
 P_.visualBar = function (canvas) {
-  const v = this.selVisual(); if (!v || this.st.focus) return;
+  const v = this.selVisual(); if (!v || this.st.focus || this.st.editInter) return;
   const deco = ['text', 'shape', 'button', 'navigator'].includes(v.type);
   const name = v.title || (WELLS[v.type] ? VNAME[v.type] : ({ text: 'Zone de texte', shape: 'Forme', button: 'Bouton', navigator: 'Navigateur de pages' })[v.type] || 'Visuel');
   const bar = h(`<div class="vbar"><span>${esc(fr(name))}</span>${!deco ? `<button class="vfocus" data-a="vfocus:${v.id}" aria-label="Mode Focus"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 4.5v-3h3M10.5 4.5v-3h-3M1.5 7.5v3h3M10.5 7.5v3h-3"/></svg></button>` : ''}<button class="vmore" data-a="vmore:${v.id}" aria-label="Plus d’options">⋯</button></div>`);
