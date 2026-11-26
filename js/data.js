@@ -84,10 +84,10 @@ window.PBQ_DATA = {
     { id:103, titre:'Le registre des visiteurs', lieu:'Les portiques d’entrée', scene:'portiques', duree:'25 à 30 min', pin:[46.4,57.2] },
     { id:104, titre:'Les portes du parc', lieu:'Le centre de contrôle des entrées', scene:'controle', duree:'30 à 35 min', pin:[68.4,50.0] },
     { id:105, titre:'Les premières statistiques', lieu:'La salle de pilotage', scene:'pilotage', duree:'30 à 35 min', pin:[58.5,42.8] },
-    { id:106, titre:'Une journée mouvementée', lieu:'Le bureau des opérations commerciales', scene:'matinee', duree:'30 à 35 min', pin:[45.8,35.9] },
-    { id:107, titre:'Les attractions populaires', lieu:'Le centre de supervision des attractions', scene:'dragon', duree:'35 à 40 min', pin:[62.7,30.9] },
-    { id:108, titre:'Les visiteurs du week-end', lieu:'Le bureau des prévisions et de l’accueil', scene:'samedi', duree:'35 à 40 min', pin:[56.7,22.2] },
-    { id:109, titre:'Le rapport de Victoria', lieu:'Le studio de présentation', scene:'studio', duree:'40 à 45 min', pin:[50.4,17.2] },
+    { id:106, titre:'Une journée mouvementée', lieu:'Le bureau des opérations commerciales', scene:'matinee', duree:'35 à 40 min', pin:[45.8,35.9] },
+    { id:107, titre:'Les attractions populaires', lieu:'Le centre de supervision des attractions', scene:'dragon', duree:'40 à 45 min', pin:[62.7,30.9] },
+    { id:108, titre:'Les visiteurs du week-end', lieu:'Le bureau des prévisions et de l’accueil', scene:'samedi', duree:'40 à 45 min', pin:[56.7,22.2] },
+    { id:109, titre:'Le rapport de Victoria', lieu:'Le studio de présentation', scene:'studio', duree:'45 à 50 min', pin:[50.4,17.2] },
     { id:110, titre:'La première présentation', lieu:'La salle du conseil d’administration', scene:'conseil', duree:'45 à 60 min', pin:[61.1,10.3] }
   ],
   objets: {

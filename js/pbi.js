@@ -140,31 +140,54 @@ const stepFormula = s => ({
 /* ───────── Graphiques (colonnes, barres, empilés, courbes) ───────── */
 const PAL = ['#118DFF', '#12239E', '#E66C37', '#6B007B', '#E044A7', '#744EC2', '#D9B300', '#D64550'];
 const tick = n => Math.abs(n) >= 1000 ? (n / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + NB + 'k' : n.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+/* Fait défiler une bande horizontale pour que l'élément actif reste visible */
+function keepVisible(strip, sel) {
+  requestAnimationFrame(() => {
+    const on = strip.querySelector(sel); if (!on) return;
+    const sb = strip.getBoundingClientRect(), ob = on.getBoundingClientRect(), k = sb.width / strip.offsetWidth || 1;
+    const l = (ob.left - sb.left) / k + strip.scrollLeft, r = l + ob.width / k;
+    if (r > strip.scrollLeft + strip.clientWidth - 6) strip.scrollLeft = r - strip.clientWidth + 24;
+    else if (l < strip.scrollLeft) strip.scrollLeft = Math.max(0, l - 8);
+  });
+}
 function niceMax(m) { if (m <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(m))); const f = m / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
 function renderChart(el, c) {
   const series = c.series.map((s, i) => ({ ...s, color: s.color || PAL[i % PAL.length] }));
   const cats = c.cats, n = cats.length;
-  const stacked = c.kind === 'stacked';
+  const stacked = c.kind === 'stacked' || !!c.stackedBar;
   const tops = cats.map((_, i) => stacked ? series.reduce((a, s) => a + (s.values[i] || 0), 0) : Math.max(...series.map(s => s.values[i] || 0)));
-  const max = c.max || niceMax(Math.max(...tops, 0) * 1.08);
-  const ticks = c.ticks || [0, max / 4, max / 2, max * 3 / 4, max];
-  const fmt = c.fmt || (x => nfmt(x));
-  const legend = series.length > 1 || c.legend ? `<div class="ch-lg">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
+  const lo = c.min || 0;
+  /* Échelle « ronde » : un pas de 1, 2, 2,5 ou 5 (puissance de dix), jamais fractionnaire pour des entiers */
+  const allInt = series.every(s => s.values.every(v => Number.isInteger(v || 0)));
+  const M = Math.max(...tops, 0) * 1.08;
+  let max = c.max, step = 0;
+  if (!max) {
+    if (M <= 0) { max = 1; step = .25; }
+    else { const raw = M / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; let nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10; if (allInt && nf * p < 1) nf = 1 / p; if (allInt && nf === 2.5 && p === 1) nf = 5; step = nf * p; max = Math.ceil(M / step - 1e-9) * step; }
+  }
+  if (lo) max = Math.max(max, lo + 1);
+  const dim = (i, k) => c.sel && !(c.sel.i === i && (c.sel.k === undefined || c.sel.k === k)) ? ' opacity=".35"' : '';
+  const ticks = c.ticks || (lo ? [lo, lo + (max - lo) / 2, max] : step ? Array.from({ length: Math.round(max / step) + 1 }, (_, i) => +(i * step).toFixed(6)) : [0, max / 4, max / 2, max * 3 / 4, max]);
+  const sc = v => Math.max(0, (v - lo)) / (max - lo) * 100;
+  const fmt = c.fmt || (x => nfmt(x)), tk = c.tickFmt || tick;
+  const legend = (series.length > 1 || c.legend) && c.showLegend !== false ? `<div class="ch-lg">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
   const box = h(`<div class="ch">${c.title ? `<div class="v-title">${esc(fr(c.title))}</div>` : ''}${legend}<div class="ch-grid ${c.kind === 'bar' ? 'is-bar' : ''}"></div></div>`);
   const grid = $('.ch-grid', box);
   let svg = '', labels = '';
   if (c.kind === 'bar') {
     const step = 100 / n, bw = step * .62 / (stacked ? 1 : series.length);
-    ticks.forEach(t => { const x = t / max * 100; svg += `<line x1="${x}" y1="0" x2="${x}" y2="100" stroke="#EDEBE9" stroke-width="1" vector-effect="non-scaling-stroke"/>`; });
-    cats.forEach((_, i) => series.forEach((s, k) => {
-      const val = s.values[i] || 0, w = val / max * 100, y = i * step + (step - bw * series.length) / 2 + k * bw;
-      svg += `<rect x="0" y="${y.toFixed(3)}" width="${w.toFixed(3)}" height="${bw.toFixed(3)}" fill="${s.color}"/>`;
-      if (c.labels) labels += `<span class="ch-dl" style="left:${w.toFixed(2)}%; top:${(y + bw / 2).toFixed(2)}%; transform:translate(3px,-50%)">${esc(fmt(val))}</span>`;
-    }));
-    grid.innerHTML = `<div class="ch-cats">${cats.map(x => `<span>${esc(x)}</span>`).join('')}</div><div class="ch-area"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${svg}</svg>${labels}</div><span></span><div class="ch-xt">${ticks.map(t => `<span style="left:${(t / max * 100).toFixed(2)}%">${esc(tick(t))}</span>`).join('')}</div>`;
+    ticks.forEach(t => { const x = sc(t); svg += `<line x1="${x}" y1="0" x2="${x}" y2="100" stroke="#EDEBE9" stroke-width="1" vector-effect="non-scaling-stroke"/>`; });
+    cats.forEach((_, i) => { let acc = 0; series.forEach((s, k) => {
+      const val = s.values[i] || 0, w = stacked ? val / (max - lo) * 100 : sc(val), y = i * step + (step - bw * (stacked ? 1 : series.length)) / 2 + (stacked ? 0 : k * bw);
+      svg += `<rect x="${acc.toFixed(3)}" y="${y.toFixed(3)}" width="${w.toFixed(3)}" height="${bw.toFixed(3)}" fill="${s.color}" data-seg="${i}|${k}"${c.hl ? ' opacity=".3"' : dim(i, k)}/>`;
+      if (c.hl) { const hv = (c.hl[k] || [])[i] || 0, w2 = stacked ? hv / (max - lo) * 100 : sc(hv); if (hv) svg += `<rect x="${acc.toFixed(3)}" y="${y.toFixed(3)}" width="${w2.toFixed(3)}" height="${bw.toFixed(3)}" fill="${s.color}" data-seg="${i}|${k}"/>`; }
+      if (c.labels && val) labels += `<span class="ch-dl ${stacked ? 'in' : ''}" style="left:${(stacked ? acc + w / 2 : w).toFixed(2)}%; top:${(y + bw / 2).toFixed(2)}%; transform:${stacked ? 'translate(-50%,-50%)' : 'translate(3px,-50%)'}">${esc(fmt(val))}</span>`;
+      if (stacked) acc += w;
+    }); if (c.totals && stacked) labels += `<span class="ch-dl tot" style="left:${acc.toFixed(2)}%; top:${(i * step + step / 2).toFixed(2)}%; transform:translate(3px,-50%)">${esc(fmt(tops[i]))}</span>`; });
+    grid.innerHTML = `<div class="ch-cats">${cats.map(x => `<span>${esc(x)}</span>`).join('')}</div><div class="ch-area"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${svg}</svg>${labels}</div><span></span><div class="ch-xt">${ticks.map(t => `<span style="left:${sc(t).toFixed(2)}%">${esc(tk(t))}</span>`).join('')}</div>${c.axisTitle ? `<span></span><div class="ch-at">${esc(c.axisTitle)}</div>` : ''}`;
   } else {
     const step = 100 / n, groupW = step * .62, bw = stacked || c.kind === 'line' ? groupW : groupW / series.length;
-    ticks.forEach(t => { const y = 100 - t / max * 100; svg += `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="${t === 0 ? '#C8C6C4' : '#EDEBE9'}" stroke-width="1" vector-effect="non-scaling-stroke"/>`; });
+    ticks.forEach(t => { const y = 100 - sc(t); svg += `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="${t === lo ? '#C8C6C4' : '#EDEBE9'}" stroke-width="1" vector-effect="non-scaling-stroke"/>`; });
     if (c.kind === 'line') {
       series.forEach(s => {
         const pts = cats.map((_, i) => `${(i * step + step / 2).toFixed(3)},${(100 - (s.values[i] || 0) / max * 100).toFixed(3)}`).join(' ');
@@ -175,16 +198,18 @@ function renderChart(el, c) {
       cats.forEach((_, i) => {
         let acc = 0;
         series.forEach((s, k) => {
-          const val = s.values[i] || 0, hh = val / max * 100;
+          const val = s.values[i] || 0, hh = stacked ? val / (max - lo) * 100 : sc(val);
           const x = i * step + (step - groupW) / 2 + (stacked ? 0 : k * bw);
           const y = 100 - (stacked ? acc + hh : hh);
-          svg += `<rect x="${x.toFixed(3)}" y="${y.toFixed(3)}" width="${bw.toFixed(3)}" height="${hh.toFixed(3)}" fill="${s.color}" data-seg="${i}|${k}"/>`;
+          svg += `<rect x="${x.toFixed(3)}" y="${y.toFixed(3)}" width="${bw.toFixed(3)}" height="${hh.toFixed(3)}" fill="${s.color}" data-seg="${i}|${k}"${c.hl ? ' opacity=".3"' : dim(i, k)}/>`;
+          if (c.hl) { const hv = (c.hl[k] || [])[i] || 0, hh2 = hv / max * 100; if (hh2) svg += `<rect x="${x.toFixed(3)}" y="${(100 - (stacked ? acc + hh2 : hh2)).toFixed(3)}" width="${bw.toFixed(3)}" height="${hh2.toFixed(3)}" fill="${s.color}" data-seg="${i}|${k}"/>`; }
           if (c.labels && val) labels += `<span class="ch-dl ${stacked ? 'in' : ''}" style="left:${(x + bw / 2).toFixed(2)}%; bottom:${(stacked ? acc + hh / 2 : hh).toFixed(2)}%">${esc(fmt(val))}</span>`;
           acc += hh;
         });
+        if (c.totals && stacked) labels += `<span class="ch-dl tot" style="left:${(i * step + step / 2).toFixed(2)}%; bottom:${acc.toFixed(2)}%">${esc(fmt(tops[i]))}</span>`;
       });
     }
-    grid.innerHTML = `<div class="ch-y">${[...ticks].reverse().map(t => `<span>${esc(tick(t))}</span>`).join('')}</div><div class="ch-area"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${svg}</svg>${labels}</div><span></span><div class="ch-x">${cats.map(x => `<span>${esc(x)}</span>`).join('')}</div>`;
+    grid.innerHTML = `<div class="ch-y">${[...ticks].reverse().map(t => `<span>${esc(tk(t))}</span>`).join('')}</div><div class="ch-area"><svg viewBox="0 0 100 100" preserveAspectRatio="none">${svg}</svg>${labels}</div><span></span><div class="ch-x">${cats.map(x => `<span>${esc(x)}</span>`).join('')}</div>${c.axisTitle ? `<span></span><div class="ch-at">${esc(c.axisTitle)}</div>` : ''}`;
   }
   el.appendChild(box);
 }
@@ -205,10 +230,18 @@ class PBI {
   mark(...sels) {
     $$('.is-target', this.el).forEach(e => e.classList.remove('is-target'));
     this.marks = sels.flat().filter(Boolean);
+    this._scrollMark = this.marks.length > 0;
     this.applyMarks();
   }
   applyMarks() {
     for (const s of this.marks) $$(s, this.el).forEach(e => e.classList.add('is-target'));
+    /* Une cible cachée dans le volet défile jusqu'à devenir visible, une seule fois par guide */
+    const t = this._scrollMark && $('.pane-body .is-target', this.el);
+    if (t) {
+      this._scrollMark = false;
+      const pb = t.closest('.pane-body'), a = pb.getBoundingClientRect(), r = t.getBoundingClientRect(), k = a.height / pb.clientHeight || 1;
+      if (r.top < a.top || r.bottom > a.bottom) pb.scrollTop += (r.top - a.top) / k - 16;
+    }
   }
   load(P) { this.P = P; this.st.selTable = null; this.st.selVis = null; this.st.selCol = null; this.render(); }
   emit(type, payload) { return this.act(type, payload); }
@@ -220,6 +253,7 @@ class PBI {
   /* ── Rendu principal ── */
   render() {
     const P = this.P, st = this.st;
+    const pb0 = $('.pane-body', this.el), keep = pb0 ? { pane: st.pane, top: pb0.scrollTop, sel: st.selVis, tab: st.vzTab, view: st.view } : null;
     this.el.innerHTML = '';
     this.el.appendChild(h(`<div class="pbi-title"><i class="pbi-logo">${pbiLogo}</i><b>${esc(this.fileTitle())}</b>${P.dirty ? '<i class="dirty" title="Modifications non enregistrées"></i>' : ''}<span>Power BI Desktop</span><button class="pbi-save" data-a="save" aria-label="Enregistrer">${I.save}</button></div>`));
     this.el.appendChild(this.ribbon());
@@ -232,6 +266,7 @@ class PBI {
     else if (st.view === 'table') this.tableView(main);
     else this.modelView(main);
     this.el.appendChild(body);
+    if (keep && keep.pane === st.pane && keep.sel === st.selVis && keep.tab === st.vzTab && keep.view === st.view) { const pb = $('.pane-body', this.el); if (pb) pb.scrollTop = keep.top; }
     if (this.hooks.after) this.hooks.after(this);
     this.applyMarks();
   }
@@ -239,13 +274,15 @@ class PBI {
     const st = this.st;
     const tabs = ['Accueil', 'Insertion', 'Modélisation', 'Affichage'];
     if (st.view === 'table' && st.selCol) tabs.push('Outils de colonne');
+    if (st.view === 'report' && st.selVis && this.formatTab && this.formatTab().length) tabs.push('Format');
     if (!tabs.includes(st.tab)) st.tab = 'Accueil';
     const cmds = {
       'Accueil': [['get', 'Obtenir les données', I.get], ['excel', 'Classeur Excel', I.excel], ['enter', 'Entrer des données', I.enter], '|', ['transform', 'Transformer les données', I.transform], ['refresh', 'Actualiser', I.refresh], '|', ['newvisual', 'Nouveau visuel', I.visual], ['newmeasure', 'Nouvelle mesure', I.measure], '|', ['publish', 'Publier', I.publish]],
       'Insertion': [['newpage', 'Nouvelle page', I.page], ['newvisual', 'Nouveau visuel', I.visual], ['textbox', 'Zone de texte', I.text], ['buttons', 'Boutons', I.button], ['shapes', 'Formes', I.shape], ['image', 'Image', I.image]],
       'Modélisation': [['relations', 'Gérer les relations', I.relation], ['newmeasure', 'Nouvelle mesure', I.measure], ['newcol', 'Nouvelle colonne', I.col], ['newtable', 'Nouvelle table', I.table]],
-      'Affichage': [['themes', 'Thèmes', I.theme], ['filterpane', 'Volet Filtres', I.filter], ['mobile', 'Disposition mobile', I.mobile]],
-      'Outils de colonne': this.colTools ? this.colTools() : []
+      'Affichage': [['themes', 'Thèmes', I.theme], ['filterpane', 'Volet Filtres', I.filter], ['syncslicers', 'Synchroniser les segments', I.filter], ['mobile', 'Disposition mobile', I.mobile]],
+      'Outils de colonne': this.colTools ? this.colTools() : [],
+      'Format': this.formatTab ? this.formatTab() : []
     };
     const r = h(`<div class="ribbon"><div class="rb-tabs"><button class="rb-tab file" data-a="file">Fichier</button>${tabs.map(t => `<button class="rb-tab ${t === st.tab ? 'on' : ''}" data-a="tab:${t}">${esc(t)}</button>`).join('')}</div><div class="rb-cmds"></div></div>`);
     const box = $('.rb-cmds', r);
@@ -253,7 +290,7 @@ class PBI {
     for (const c of cmds[st.tab] || []) {
       if (c === '|') { box.appendChild(h('<i class="rb-sep"></i>')); continue; }
       if (c instanceof Element) { box.appendChild(c); continue; }
-      box.appendChild(h(`<button class="rb-cmd" data-a="cmd:${c[0]}">${c[2]}<span>${esc(c[1])}</span></button>`));
+      box.appendChild(h(`<button class="rb-cmd ${c[3] || ''}" data-a="cmd:${c[0]}">${c[2]}<span>${esc(c[1])}</span></button>`));
     }
     return r;
   }
@@ -283,12 +320,17 @@ class PBI {
     const pg = this.page();
     const cv = h(`<div class="canvas" data-a="canvas"><div class="page"></div></div>`);
     const pageEl = $('.page', cv);
+    if (pg && pg.size) { pageEl.style.setProperty('--ar', pg.size[0] + ' / ' + pg.size[1]); pageEl.style.setProperty('--arn', pg.size[0] / pg.size[1]); }
+    if (pg && pg.bg) pageEl.style.background = pg.bg;
     if (!pg) pageEl.appendChild(h(`<div class="page-empty">Aucune page</div>`));
     else {
       if (!pg.visuals.length) pageEl.appendChild(h(`<div class="page-empty">${esc(this.P.tables.length ? 'Construis ton visuel à partir des volets Visualisations et Données.' : 'Ajouter des données à votre rapport : les données chargées apparaîtront dans le volet Données.')}</div>`));
-      for (const v of pg.visuals) pageEl.appendChild(this.visualEl(v));
+      const fv = this.st.focus && pg.visuals.find(v => v.id === this.st.focus);
+      if (fv) { pageEl.appendChild(this.visualEl({ ...fv, x: 2, y: 12, w: 96, h: 86 })); pageEl.appendChild(h(`<button class="focus-back" data-a="unfocus:1">‹ Retour au rapport</button>`)); }
+      else { this.st.focus = null; for (const v of pg.visuals) pageEl.appendChild(this.visualEl(v)); }
     }
     main.appendChild(cv);
+    if (this.visualBar) this.visualBar(cv);
     const tabs = h(`<div class="pagetabs"></div>`);
     for (const p of this.P.pages) {
       if (this.st.renaming === p.id) {
@@ -302,6 +344,7 @@ class PBI {
     }
     tabs.appendChild(h(`<button class="ptab-add" data-a="cmd:newpage" aria-label="Nouvelle page">+</button>`));
     main.appendChild(tabs);
+    keepVisible(tabs, '.ptab.on');
     main.appendChild(this.panes());
   }
   renamePage(id, name) {
@@ -331,7 +374,7 @@ class PBI {
   }
   visualEl(v) {
     const el = h(`<div class="vis vis-${v.type} ${this.st.selVis === v.id ? 'sel' : ''}" data-a="vis:${v.id}" style="left:${v.x}%; top:${v.y}%; width:${v.w}%; height:${v.h}%"></div>`);
-    const R = this.renderers && this.renderers[v.type];
+    const R = v.f && this.renderers && this.renderers[v.type];
     if (R) R.call(this, el, v);
     else if (v.type === 'card') el.appendChild(h(`<div class="v-card" style="width:100%; height:100%"><b>${esc(fr(String(v.display)))}</b><span>${esc(v.label || '')}</span></div>`));
     else if (['column', 'bar', 'stacked', 'line'].includes(v.type)) renderChart(el, { kind: v.type, title: v.title, cats: v.data.map(d => d[0]), series: [{ name: v.serie || '', values: v.data.map(d => d[1]), color: v.color }], max: v.max, ticks: v.ticks, labels: v.labels });
@@ -401,18 +444,18 @@ class PBI {
       case 'save': this.emit('save', null); break;
       case 'file': if (this.gate('file.menu', null, b)) this.openBackstage(); break;
       case 'tab': st.tab = v; this.emit('tab', v); this.render(); break;
-      case 'cmd': this.emit('cmd', v) === 'no' && shake(b); break;
+      case 'cmd': if (this.emit('cmd', v) === 'no') shake(b); else if (this.cmdAct) this.cmdAct(v, b); break;
       case 'view': if (st.view !== v && this.gate('view', v, b)) { st.view = v; st.selCol = null; if (v === 'table' && !st.selTable && this.P.tables.length === 1) st.selTable = null; this.render(); } else if (st.view === v) this.emit('view', v); break;
       case 'pane': st.pane = v; this.emit('pane', v); this.render(); break;
       case 'dtable': if (this.gate('table.select', v, b)) { st.selTable = v; this.render(); } break;
-      case 'field': this.emit('field', v); break;
+      case 'field': if (this.emit('field', v) !== 'no' && this.fieldTap) this.fieldTap(v); else shake(b); break;
       case 'tsel': if (this.gate('table.select', v, b)) { st.selTable = v; st.selCol = null; st.selRow = null; this.render(); } break;
       case 'tcol': if (this.gate('col.select', v, b)) { st.selCol = v; st.tab = 'Outils de colonne'; this.render(); } break;
       case 'trow': if (this.gate('row', +v, b)) { st.selRow = +v; this.render(); } break;
       case 'mtable': if (this.gate('model.table', v, b)) { st.selModel = v; this.render(); } break;
       case 'mtool': this.emit('model.tool', v) === 'no' && shake(b); break;
       case 'vis': e.stopPropagation(); if (this.gate('visual', v, b)) { st.selVis = v; this.render(); } break;
-      case 'canvas': if (e.target.closest('.vis')) return; this.emit('canvas', null); if (st.selVis) { st.selVis = null; this.render(); } break;
+      case 'canvas': if (e.target.closest('.vis')) return; this.emit('canvas', null); if (st.selVis || st.xsel) { st.selVis = null; st.xsel = null; this.render(); } break;
       case 'ptab': {
         const r = this.emit('page', v);
         if (r === 'no') { shake(b); break; }
@@ -705,7 +748,8 @@ class PBI {
     for (const c of cmds) rb.appendChild(h(`<button class="rb-cmd" data-q="cmd:${c[0]}">${c[2]}<span>${esc(c[1])}</span></button>`));
     rb.appendChild(h(`<button class="rb-cmd" data-q="typemenu" style="min-width:96px; max-width:none; align-items:flex-start; text-align:left" ${col ? '' : 'disabled'}><span style="color:var(--f-mid)">Type de données</span><b style="font-size:11px; display:flex; gap:3px; align-items:center; white-space:nowrap">${col ? esc((TYPES[col.t] || TYPES.any).nom) : 'Aucune colonne'} ${I.chev.replace('<svg', '<svg width="10" height="10"')}</b></button>`));
     el.appendChild(rb);
-    el.appendChild(h(`<div class="pq-q"><span>Requêtes [${pq.queries.length}]</span>${pq.queries.map((x, i) => `<button class="tsel ${i === pq.cur ? 'on' : ''}" data-q="query:${i}">${I.tbl}${esc(x.name)}</button>`).join('')}</div>`));
+    const qs = h(`<div class="pq-q"><span>Requêtes [${pq.queries.length}]</span>${pq.queries.map((x, i) => `<button class="tsel ${i === pq.cur ? 'on' : ''}" data-q="query:${i}">${I.tbl}${esc(x.name)}</button>`).join('')}</div>`);
+    el.appendChild(qs); keepVisible(qs, '.tsel.on');
     const body = h(`<div class="pq-body"><div class="pq-formula"><span>fx</span><code></code></div><div class="grid"></div></div>`);
     $('code', body).textContent = stepFormula(q.steps[stepIdx])(q);
     $('.grid', body).appendChild(this.gridTable(T.cols, T.rows, { rn: true, types: true, typeAct: 'pqtype', colAct: 'pqcol', selCol: pq.selCol, errAct: 'pqerr', errSel: pq.errSel, filterAct: 'pqfilter', fmtKey: null }));

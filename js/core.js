@@ -400,7 +400,12 @@ function makeCtx(m, t, exIndex, pbi) {
     say(who, text) { bubble(who, text); return sleep(readMs(text), t); },
     async says(who, list) { for (const s of list) await ctx.say(who, s); },
     pixel(text) { return ctx.say('pixel', text); },
-    todo(text) { clearTimeout(oopsTimer); curTodo = text; bubble('pixel', text, 'todo'); },
+    todo(text) {
+      clearTimeout(oopsTimer);
+      const last = thread.lastElementChild;
+      if (curTodo === text && last && last.classList.contains('todo') && !last.classList.contains('gone')) return;
+      curTodo = text; bubble('pixel', text, 'todo');
+    },
     ok(text) { bubble('pixel', text, 'ok'); return sleep(readMs(text), t); },
     note(text) { bubble('pixel', text); },
     /* Cible montrée seulement après deux erreurs ou le troisième indice */

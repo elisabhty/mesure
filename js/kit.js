@@ -44,7 +44,7 @@ function matching(spec) {
   const vals = {};
   const lab = id => (spec.options.find(o => o[0] === id) || [])[1];
   spec.rows.forEach(r => {
-    const row = h(`<div class="bt-row"><div class="bt-file">${r.icon ? `<span class="ficon ${r.icon}">${esc(r.tag || '')}</span>` : `<span class="ficon" style="background:#E8EAF2; color:#8A90AA">${FILE}</span>`}<span><b>${esc(r.label)}</b>${r.sub ? `<small style="display:block; font-size:12px; color:var(--gris); margin-top:1px">${esc(fr(r.sub))}</small>` : ''}</span></div><button class="pick" data-row="${r.id}">${esc(spec.placeholder || 'Choisir le format')}</button></div>`);
+    const row = h(`<div class="bt-row"><div class="bt-file">${spec.plain ? '' : r.icon ? `<span class="ficon ${r.icon}">${esc(r.tag || '')}</span>` : `<span class="ficon" style="background:#E8EAF2; color:#8A90AA">${FILE}</span>`}<span><b>${esc(r.label)}</b>${r.sub ? `<small style="display:block; font-size:12px; color:var(--gris); margin-top:1px">${esc(fr(r.sub))}</small>` : ''}</span></div><button class="pick" data-row="${r.id}">${esc(spec.placeholder || 'Choisir le format')}</button></div>`);
     const pick = $('.pick', row);
     pick.addEventListener('click', () => menu(pick, spec.options.map(o => [o[0], o[1], vals[r.id] === o[0]]), v => {
       vals[r.id] = v; pick.textContent = lab(v); pick.className = 'pick set';
@@ -120,11 +120,62 @@ function desktop(ids) {
 
 /* Carte de leçon */
 function lesson(k, titre, html) {
-  return h(`<div><div class="lesson-card">${k ? `<div class="lc-k">${esc(fr(k))}</div>` : ''}${titre ? `<div class="lc-h">${esc(fr(titre))}</div>` : ''}${html || ''}</div></div>`);
+  const el = h(`<div><div class="lesson-card">${k ? `<div class="lc-k">${esc(fr(k))}</div>` : ''}${titre ? `<div class="lc-h">${esc(fr(titre))}</div>` : ''}${html || ''}</div></div>`);
+  typo(el);
+  return el;
+}
+/* Typographie française sur tous les textes d'un bloc (espaces insécables avant : ; ! ? €, apostrophes) */
+function typo(el) {
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement && n.parentElement.closest('.mono') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const list = []; while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(n => { const t = fr(n.nodeValue); if (t !== n.nodeValue) n.nodeValue = t; });
+  return el;
 }
 
 /* Petite pause entre deux gestes, interrompue par un toucher */
 const norm = window.PBQ.norm;
 
-window.K = { menu, closeMenu, board, matching, ordering, desktop, lesson, ICONS, norm };
+/* ───────── Aides pour les missions de rapport ───────── */
+const pageOf = (x, id) => x.pbi.P.pages.find(p => p.id === id);
+const visOf = (x, id) => { for (const p of x.pbi.P.pages) { const v = p.visuals.find(v => v.id === id); if (v) return v; } return null; };
+/* Remet l'espace de travail sur une page, en vue Rapport, sans dialogue ouvert */
+function ready(x, pageId) {
+  const pbi = x.pbi; x.app('pbi'); pbi.closeDialog(true); if (pbi.closePQ) pbi.closePQ(true); pbi.closeBackstage && pbi.closeBackstage();
+  pbi.st.view = 'report'; pbi.st.focus = null; if (pageId && pageOf(x, pageId)) pbi.P.activePage = pageId; pbi.render();
+}
+const sig = f => `${f.c}:${f.agg}${f.hier ? ':H' : ''}`;
+const titleIs = (v, t) => !!(v && v.title && norm(v.title) === norm(t));
+/* Garde générique : protège les visuels validés, laisse le reste libre */
+function guard(x, keep, extra = {}) {
+  const k = id => keep.includes(id);
+  const no = () => x.oops('', 'Ce visuel est déjà validé : laisse-le tel quel.');
+  return Object.assign({
+    'well.agg': p => k(p.vis) ? no() : undefined, 'well.add': p => k(p.vis) ? no() : undefined, 'well.remove': p => k(p.vis) ? no() : undefined,
+    'well.move': p => k(p.vis) ? no() : undefined, 'well.hier': p => k(p.vis) ? no() : undefined, 'well.rename': p => k(p.vis) ? no() : undefined,
+    'viz.fmt': p => k(p.vis) ? no() : undefined, 'viz.type': p => k(p.vis) ? no() : undefined, 'table.sort': p => k(p.vis) ? no() : undefined, 'vis.sort': p => k(p.vis) ? no() : undefined,
+    'vis.delete': p => k(p.vis) ? x.oops('', 'Garde ce visuel : il fait partie du rapport.') : undefined,
+    view: v => v !== 'report' ? x.oops('', 'Reste dans la vue Rapport.') : undefined,
+    page: () => {}, pane: () => {}, visual: () => {}, canvas: () => {}, tab: () => {}, field: () => {}, 'table.select': () => {},
+    'viz.create': () => {}, 'chart.point': () => {}, 'table.sort2mode': () => {}, 'vis.focus': () => {}, 'page.renameStart': () => {}, 'table.rowsel': () => {},
+    'filter.add': () => x.oops('', 'Garde le périmètre complet : aucun filtre n’est nécessaire ici.'), 'filter.set': () => x.oops('', 'Garde le périmètre complet : aucun filtre n’est nécessaire ici.'),
+    'filter.type': () => x.oops('', 'Garde le périmètre complet : aucun filtre n’est nécessaire ici.'), 'filter.remove': () => {}, 'slicer': () => {}, 'interaction.set': () => x.oops('', 'Garde les interactions telles qu’elles sont.'),
+    'page.rename': () => {}, 'page.dup': () => x.oops('', 'Aucune page supplémentaire n’est nécessaire.'), 'page.del': () => x.oops('', 'Garde les pages du rapport.'),
+    cmd: c => ['newmeasure', 'newcol'].includes(c) ? x.oops('', 'Pas de formule aujourd’hui : les agrégations suffisent.') : c === 'relations' ? x.oops('', 'Aucune relation n’est nécessaire ici.') : c === 'newpage' ? x.oops('', 'Aucune nouvelle page n’est nécessaire.') : undefined,
+    'model.tool': () => x.oops('', 'Aucune relation n’est nécessaire ici.')
+  }, extra);
+}
+/* Enregistrement final : vue Rapport et sauvegarde, validé sur l'état */
+async function saveStep(x, valid, msgs = {}) {
+  const pbi = x.pbi, P = () => pbi.P;
+  const next = () => { x.todo(msgs.todo || 'Enregistre le projet Wonderland_Pilotage.'); x.guide('.pbi-save'); };
+  next();
+  const save = () => { pbi.closeBackstage(); const e = valid(); if (e) return x.oops(e[0] || '', e[1]); P().dirty = false; P().saved = true; pbi.render(); return true; };
+  await x.wait(guard(x, msgs.keep || [], Object.assign({
+    save: () => save(), 'file.menu': () => {},
+    file: k => k === 'back' ? undefined : k === 'save' ? save() : k === 'saveas' ? x.oops(msgs.saveas || '', 'Utilise Enregistrer pour garder le même projet.') : x.oops('', 'Utilise Enregistrer.')
+  }, msgs.extra || {})));
+  x.guide();
+}
+
+window.K = { menu, closeMenu, board, matching, ordering, desktop, lesson, typo, ICONS, norm, pageOf, visOf, ready, sig, titleIs, guard, saveStep };
 })();
