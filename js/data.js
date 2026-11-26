@@ -1,4 +1,4 @@
-/* Power BI Quest — données du module 1 */
+/* Power BI Quest — données des modules 1 et 2 */
 (function () {
 'use strict';
 const P = (nom, role, img) => ({ nom, role, img: img ? 'img/p-' + img + '.webp' : null });
@@ -88,12 +88,31 @@ window.PBQ_DATA = {
     { id:107, titre:'Les attractions populaires', lieu:'Le centre de supervision des attractions', scene:'dragon', duree:'40 à 45 min', pin:[62.7,30.9] },
     { id:108, titre:'Les visiteurs du week-end', lieu:'Le bureau des prévisions et de l’accueil', scene:'samedi', duree:'40 à 45 min', pin:[56.7,22.2] },
     { id:109, titre:'Le rapport de Victoria', lieu:'Le studio de présentation', scene:'studio', duree:'45 à 50 min', pin:[50.4,17.2] },
-    { id:110, titre:'La première présentation', lieu:'La salle du conseil d’administration', scene:'conseil', duree:'45 à 60 min', pin:[61.1,10.3] }
+    { id:110, titre:'La première présentation', lieu:'La salle du conseil d’administration', scene:'conseil', duree:'45 à 60 min', pin:[61.1,10.3] },
+    /* Module 2 : les archives oubliées (carte2) */
+    { id:201, titre:'Le fichier catastrophe', lieu:'Les archives oubliées de Wonderland', scene:'archives', duree:'45 à 50 min', xp:200, pin:[34,79] },
+    { id:202, titre:'Où sont les en-têtes ?', lieu:'Les archives techniques', scene:'tri', duree:'60 à 80 min', xp:160, pin:[66,71] },
+    { id:203, titre:'Les visiteurs fantômes', lieu:'L’atelier de maintenance et le bureau Data', scene:'atelier', duree:'70 à 90 min', xp:200, pin:[30,63] },
+    { id:204, titre:'Les billets en double', lieu:'L’atelier technique et le bureau Data', scene:'dossiers', duree:'75 à 90 min', xp:200, pin:[68,55] },
+    { id:205, titre:'Des dates impossibles', lieu:'Le bureau Data et les archives techniques', scene:'calendrier', duree:'75 à 95 min', xp:200, pin:[32,47] },
+    { id:206, titre:'Les colonnes mélangées', lieu:'Les archives techniques', scene:'compartiments', duree:'65 à 85 min', xp:200, pin:[68,39] },
+    { id:207, titre:'Les tarifs désordonnés', lieu:'Le bureau Data et le service exploitation', scene:'exploitation', duree:'70 à 90 min', xp:200, pin:[32,31] },
+    { id:208, titre:'Les douze fichiers mensuels', lieu:'Les archives et le bureau Data', scene:'classeurs', duree:'80 à 100 min', xp:200, pin:[68,23] },
+    { id:209, titre:'Les données dispersées', lieu:'Le bureau Data et le service exploitation', scene:'connexions', duree:'80 à 100 min', xp:200, pin:[32,15] },
+    { id:210, titre:'Le grand nettoyage', lieu:'Le bureau Data et la salle de réunion technique', scene:'reunion', duree:'90 à 120 min', xp:300, pin:[64,7] }
+  ],
+  modules: [
+    { n:1, titre:'Les premiers pas', img:'carte.webp', alt:'Carte illustrée du parc Wonderland' },
+    { n:2, titre:'Les archives oubliées', sous:'Préparation et nettoyage des données avec Power Query', fin:'les données de maintenance sont préparées et auditées', img:'carte2.webp', alt:'Carte illustrée des archives de Wonderland' }
   ],
   objets: {
     plante:'Plante de bureau', lampe:'Lampe de bureau articulée', 'grande-roue':'Maquette de la grande roue', 'tableau-qualite':'Tableau de contrôle qualité',
     'second-ecran':'Deuxième écran', clavier:'Clavier rétroéclairé', dragon:'Maquette lumineuse de Dragon', calendrier:'Calendrier interactif',
-    'ecran-panoramique':'Écran panoramique', certificat:'Certificat des fondamentaux'
+    'ecran-panoramique':'Écran panoramique', certificat:'Certificat des fondamentaux',
+    'lampe-torche':'Lampe torche des archives', etiqueteuse:'Étiqueteuse des en-têtes', 'tableau-investigations':'Tableau de suivi des investigations',
+    'armoire-preuves':'Armoire des preuves', horloge:'Horloge des archives', 'classeur-compartiments':'Classeur à compartiments',
+    repertoire:'Répertoire des libellés officiels', bibliotheque:'Bibliothèque annuelle', 'tableau-connexions':'Tableau des connexions',
+    station:'Station de préparation des données'
   },
   services: ['Billetterie','Fréquentation','Attractions','Maintenance','Finances','Satisfaction']
 };

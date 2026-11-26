@@ -654,8 +654,9 @@ const def = {
     ['Un rapport autonome', 'Comment vérifier qu’un rapport s’utilise sans son auteur ?', 'Tester la navigation, contrôler l’inventaire des objets, l’accessibilité et la conservation des sélections.'],
     ['Restituer des résultats', 'Que doit contenir une bonne restitution ?', 'Des faits vérifiables, leur période et leur sens, leurs limites, et des recommandations proportionnées aux données.']
   ],
+  suiteTitre: 'Dimanche, 10 h 15',
   suite: [
-    { bg: 'bureau', n: 'Lundi 8 juin, 7 h 55. Ton certificat est encadré au-dessus de l’écran panoramique. La maquette de Dragon tourne doucement sur l’étagère.' },
+    { bg: 'bureau', n: 'Dimanche 7 juin, 10 h 15. De retour au bureau, ton certificat trouve sa place au-dessus de l’écran panoramique. La maquette de Dragon tourne doucement sur l’étagère.' },
     { p: 'pixel', t: 'Le premier rapport est terminé. Nous pouvons maintenant intégrer les autres services de Wonderland.' },
     { card: { k: 'Messages reçus', ul: ['Oscar, maintenance : export des interventions techniques', 'Gabriel, finance : anciens fichiers de dépenses du parc', 'Lola, marketing : historique clients et réservations'] } },
     { p: 'pixel', t: 'Ah… nous avons un problème.' },

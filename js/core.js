@@ -45,7 +45,15 @@ const store = {
 };
 let S = Object.assign({ xp: 0, ex: {}, done: [], badges: [], objets: [], fiches: [], resume: null, flips: {} }, store.load() || {});
 const isDone = id => S.done.includes(id);
-const unlocked = id => id === 101 || isDone(id - 1) || isDone(id);
+const ids = () => D.missions.map(m => m.id);
+const prevOf = id => { const l = ids(), k = l.indexOf(id); return k > 0 ? l[k - 1] : null; };
+const nextOf = id => { const l = ids(), k = l.indexOf(id); return k >= 0 && k < l.length - 1 ? l[k + 1] : null; };
+const unlocked = id => { const p = prevOf(id); return p === null || isDone(p) || isDone(id); };
+const modOf = id => Math.floor(id / 100);
+const finale = id => id % 100 === 10;
+const xpOf = id => ((D.missions.find(m => m.id === id) || {}).xp) || 200;
+const xpEx = (id, i) => { const def = M[id]; return def && def.xpEx ? def.xpEx[i] : Math.round(xpOf(id) / 8); };
+const doneIn = mod => S.done.filter(id => modOf(id) === mod).length;
 const currentMission = () => (D.missions.find(m => !isDone(m.id)) || {}).id;
 
 /* ───────── Missions ───────── */
@@ -78,25 +86,33 @@ function showTab(t) {
 }
 $$('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
-/* Parc */
+/* Parc : une carte par module, empilées (le parcours monte du module 1 vers le module 2) */
 function renderPark(scrollToCurrent) {
   $('#xp-home').textContent = fr(S.xp + ' XP');
-  const map = $('#map');
-  $$('.pin, .pin-label', map).forEach(e => e.remove());
+  const box = $('#maps'); box.innerHTML = '';
   const cur = currentMission();
-  for (const m of D.missions) {
-    const st = isDone(m.id) ? 'done' : (m.id === cur ? 'current' : (unlocked(m.id) ? 'open' : 'locked'));
-    const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" aria-label="Mission ${m.id}, ${esc(m.titre)}">${m.id}</button>`);
-    b.addEventListener('click', () => openMissionSheet(m.id));
-    map.appendChild(b);
-    const lb = h(`<span class="pin-label ${st === 'locked' ? 'locked' : ''}" style="left:${m.pin[0]}%; top:${m.pin[1]}%">${esc(fr(m.titre))}</span>`);
-    map.appendChild(lb);
+  const mods = (D.modules || [{ n: 1, img: 'carte.webp' }]).slice().reverse();
+  for (const md of mods) {
+    const open = md.n === 1 || doneIn(md.n) > 0 || unlocked(md.n * 100 + 1);
+    const map = h(`<div class="map ${open ? '' : 'shut'}" data-mod="${md.n}"><img src="img/${md.img}" alt="${esc(md.alt || '')}" width="640" height="1280"></div>`);
+    for (const m of D.missions.filter(x => modOf(x.id) === md.n)) {
+      const st = isDone(m.id) ? 'done' : (m.id === cur ? 'current' : (unlocked(m.id) ? 'open' : 'locked'));
+      const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}">${m.id}</button>`);
+      b.addEventListener('click', () => openMissionSheet(m.id));
+      map.appendChild(b);
+      map.appendChild(h(`<span class="pin-label ${st === 'locked' ? 'locked' : ''}" style="left:${m.pin[0]}%; top:${m.pin[1]}%">${esc(fr(m.titre))}</span>`));
+    }
+    box.appendChild(map);
+    if (md.n > 1) {
+      const n = doneIn(md.n);
+      box.appendChild(h(`<div class="mod-band ${open ? '' : 'shut'}"><small>Module ${md.n}</small><b>${esc(fr(md.titre))}</b><span>${esc(fr(!open ? `Termine la mission ${prevOf(md.n * 100 + 1)} pour ouvrir ce module.` : n === 10 ? `Module terminé · ${md.fin || ''}` : `${md.sous} · ${n}/10`))}</span></div>`));
+    }
   }
-  const n = S.done.length;
-  $('#park-foot').textContent = fr(n === 10 ? 'Module 1 terminé. Tu maîtrises les fondamentaux de Power BI.' : `Module 1 · ${n} mission${n > 1 ? 's' : ''} sur 10 · ${S.done.length * 10} % terminé`);
+  const n1 = doneIn(1);
+  $('#park-foot').textContent = fr(n1 === 10 ? 'Module 1 terminé. Tu maîtrises les fondamentaux de Power BI.' : `Module 1 · ${n1} mission${n1 > 1 ? 's' : ''} sur 10 · ${n1 * 10} % terminé`);
   if (scrollToCurrent) {
-    const m = meta(cur || 110), sc = $('#park-scroll');
-    requestAnimationFrame(() => { const img = $('#map img'); sc.scrollTop = Math.max(0, img.offsetHeight * m.pin[1] / 100 - sc.clientHeight * .55); });
+    const sc = $('#park-scroll'), id = cur || D.missions[D.missions.length - 1].id;
+    requestAnimationFrame(() => { const pin = $(`.pin[data-m="${id}"]`); if (!pin) return; const map = pin.closest('.map'); sc.scrollTop = Math.max(0, map.offsetTop + pin.offsetTop - sc.clientHeight * .55); });
   }
 }
 function openMissionSheet(id) {
@@ -109,11 +125,11 @@ function openMissionSheet(id) {
     <div class="sheet-img"><img src="img/s-${m.scene}.webp" alt=""></div>
     <div class="kicker">Mission ${id} · ${esc(fr(m.lieu))}</div>
     <h2>${esc(fr(m.titre))}</h2>
-    <div class="meta"><span>${esc(fr(m.duree))}</span><span>8 ${id === 110 ? 'défis' : 'exercices'}</span><span>200${NB}XP</span><span>${id === 110 ? 'Épreuve finale' : 'Débutant'}</span></div>
+    <div class="meta"><span>${esc(fr(m.duree))}</span><span>8 ${finale(id) ? 'défis' : 'exercices'}</span><span>${xpOf(id)}${NB}XP</span><span>${finale(id) ? 'Épreuve finale' : modOf(id) > 1 ? 'Intermédiaire' : 'Débutant'}</span></div>
     ${goals ? `<ul class="goals">${goals}</ul>` : ''}
   </div>`));
   if (st === 'locked') {
-    sh.appendChild(h(`<p>Cette mission s’ouvre quand la mission ${id - 1} est terminée.</p>`));
+    sh.appendChild(h(`<p>Cette mission s’ouvre quand la mission ${prevOf(id)} est terminée.</p>`));
     sh.appendChild(btn('D’accord', 'cta dark', closeSheet));
   } else if (!def) {
     sh.appendChild(h(`<p>Cette mission arrive dans une prochaine version du parcours.</p>`));
@@ -146,12 +162,15 @@ function renderBureau() {
     <div><b>${P.name ? esc(P.name) + '.pbix' : 'Aucun projet'}</b><small>${esc(fr(P.pages.length ? `${P.pages.length} page${P.pages.length > 1 ? 's' : ''} : ${P.pages.map(p => p.name).join(', ')}` : 'Le projet sera créé pendant la mission 101.'))}</small></div></div>
     <div class="proj-stats"><div><b>${P.tables.length}</b><span>tables</span></div><div><b>${rows}</b><span>lignes</span></div><div><b>${vis}</b><span>visuels</span></div></div>
     <div class="net"><p>${esc(fr(`Réseau de données du parc : ${servicesOn.size}/6 services connectés`))}</p><ul>${D.services.map(s => `<li class="${servicesOn.has(s) ? 'on' : ''}"><i></i>${esc(s)}</li>`).join('')}</ul></div></div></section>`));
-  el.appendChild(h(`<section class="desk-sec"><h2>Objets du bureau<span>${S.objets.length}/10</span></h2><div class="objs">${objs.map(o => {
+  const mods = [...new Set(objs.map(o => modOf(o.m)))];
+  const sub = (list, md) => list.filter(o => modOf(o.m) === md);
+  const modName = md => { const x = (D.modules || []).find(y => y.n === md); return x ? `Module ${md} · ${x.titre}` : `Module ${md}`; };
+  el.appendChild(h(`<section class="desk-sec"><h2>Objets du bureau<span>${S.objets.length}/${objs.length}</span></h2>${mods.map(md => `${mods.length > 1 ? `<h3 class="desk-mod">${esc(fr(modName(md)))}</h3>` : ''}<div class="objs">${sub(objs, md).map(o => {
     const got = S.objets.includes(o.id);
-    return `<div class="obj ${got ? '' : 'locked'}"><img src="img/o-${o.id}.webp" alt=""><b>${esc(fr(D.objets[o.id] || o.id))}</b><small>Mission ${o.m}</small></div>`; }).join('')}</div></section>`));
-  el.appendChild(h(`<section class="desk-sec"><h2>Badges<span>${S.badges.length}/10</span></h2><div class="badges">${bdg.map(b => {
+    return `<div class="obj ${got ? '' : 'locked'}"><img src="img/o-${o.id}.webp" alt=""><b>${esc(fr(D.objets[o.id] || o.id))}</b><small>Mission ${o.m}</small></div>`; }).join('')}</div>`).join('')}</section>`));
+  el.appendChild(h(`<section class="desk-sec"><h2>Badges<span>${S.badges.length}/${bdg.length}</span></h2>${mods.map(md => `${mods.length > 1 ? `<h3 class="desk-mod">${esc(fr(modName(md)))}</h3>` : ''}<div class="badges">${sub(bdg, md).map(b => {
     const got = S.badges.includes(b.id);
-    return `<div class="badge-it ${got ? '' : 'locked'}"><img src="img/${b.id}.webp" alt=""><span>${esc(fr(b.nom))}</span></div>`; }).join('')}</div></section>`));
+    return `<div class="badge-it ${got ? '' : 'locked'}"><img src="img/${b.id}.webp" alt=""><span>${esc(fr(b.nom))}</span></div>`; }).join('')}</div>`).join('')}</section>`));
   el.appendChild(h('<div class="desk-end"></div>'));
 }
 
@@ -327,6 +346,21 @@ function bubble(who, text, kind = '') {
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
   return el;
 }
+/* Bulle de code : texte exact à copier (formules M), sans typographie française */
+function codeBubble(text, label) {
+  const last = thread.lastElementChild;
+  const first = !(last && last.dataset.who === 'pixel' && !last.classList.contains('gone'));
+  const el = h(`<div class="bub pixel code ${first ? 'first' : ''}" data-who="pixel"><img class="av" src="${avatar('pixel')}" alt=""><div class="t">${label ? `<small>${esc(fr(label))}</small>` : ''}<pre></pre><button class="copy" type="button">Copier</button></div></div>`);
+  $('pre', el).textContent = text;
+  $('.copy', el).addEventListener('click', e => {
+    e.stopPropagation(); window.PBQ.clip = text;
+    try { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {}); } catch (er) {}
+    const b = e.currentTarget; b.textContent = 'Copié'; b.classList.add('done'); act('clip', { text });
+  });
+  thread.appendChild(el); layoutThread();
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  return el;
+}
 function layoutThread() {
   const all = $$('.bub', thread);
   if (all.length > 6) all.splice(0, all.length - 6).forEach(b => b.remove());
@@ -358,8 +392,16 @@ function app(name, el) {
 function resetApps() { for (const k in apps) { apps[k].remove(); delete apps[k]; } }
 
 /* Panneau de réponse */
-function openAnswer(el) { answer.innerHTML = ''; answer.appendChild(el); answer.classList.add('on'); }
-function closeAnswer() { answer.classList.remove('on'); }
+/* Module 2 : l'espace de travail se resserre au-dessus du panneau de réponse, pour garder l'éditeur lisible */
+function fitWs() {
+  if (!active || active.id < 200 || !answer.classList.contains('on') || !answer.offsetParent) { ws.style.marginBottom = ''; return; }
+  const par = answer.offsetParent, pr = par.getBoundingClientRect(), wr = ws.getBoundingClientRect(), k = pr.height / (par.offsetHeight || 1);
+  const gap = (pr.bottom - wr.bottom) / k + (parseFloat(ws.style.marginBottom) || 0);
+  ws.style.marginBottom = Math.max(0, answer.offsetHeight - gap + 6) + 'px'; ws.classList.add('squeeze');
+}
+function openAnswer(el) {
+  { const lb = thread && thread.lastElementChild; if (lb && lb.classList.contains('todo')) lb.classList.add('done'); } answer.innerHTML = ''; answer.appendChild(el); answer.classList.add('on'); ws.style.marginBottom = ''; ws.classList.remove('squeeze'); requestAnimationFrame(() => requestAnimationFrame(fitWs)); }
+function closeAnswer() { answer.classList.remove('on'); ws.style.marginBottom = ''; ws.classList.remove('squeeze'); }
 function placeAnswer() {
   const vv = window.visualViewport; if (!vv || !mqMobile.matches) { answer.style.bottom = ''; return; }
   const off = Math.max(0, innerHeight - vv.height - vv.offsetTop);
@@ -403,11 +445,47 @@ function makeCtx(m, t, exIndex, pbi) {
     todo(text) {
       clearTimeout(oopsTimer);
       const last = thread.lastElementChild;
-      if (curTodo === text && last && last.classList.contains('todo') && !last.classList.contains('gone')) return;
+      if (curTodo === text && last && last.classList.contains('todo') && !last.classList.contains('gone')) { last.classList.remove('done'); return; }
       curTodo = text; bubble('pixel', text, 'todo');
     },
     ok(text) { bubble('pixel', text, 'ok'); return sleep(readMs(text), t); },
     note(text) { bubble('pixel', text); },
+    code(text, label) { codeBubble(text, label); return sleep(900, t); },
+    /* Question à choix multiples : des pastilles à cocher, validées ensemble */
+    multi(q, options, check, btnLabel) {
+      return new Promise((resolve, reject) => {
+        const sel = new Set();
+        const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="mchips"></div><button class="cta dark">${esc(btnLabel || 'Valider')}</button></div>`);
+        options.forEach(o => {
+          const b = h(`<button class="mchip" data-v="${esc(String(o.v))}">${esc(fr(o.t))}</button>`);
+          b.addEventListener('click', () => { sel.has(o.v) ? sel.delete(o.v) : sel.add(o.v); b.classList.toggle('on', sel.has(o.v)); });
+          $('.mchips', el).appendChild(b);
+        });
+        if (options.some(o => String(o.t).length > 26)) $('.mchips', el).classList.add('long');
+        $('.cta', el).addEventListener('click', () => {
+          if (t !== run) return;
+          const r = check([...sel]);
+          if (r === true) { closeAnswer(); resolve([...sel]); return; }
+          const bad = Array.isArray(r) ? r : [r]; ctx.oops(bad[0] || '', bad[1]); shake($('.mchips', el));
+        });
+        openAnswer(el);
+        const guard = setInterval(() => { if (t !== run) { clearInterval(guard); closeAnswer(); reject(new Cancel()); } }, 300);
+      });
+    },
+    /* Formule M à copier : panneau du bas, le bouton la place dans le presse-papiers de l'appli */
+    formula(src, label, btnLabel) {
+      return new Promise((resolve, reject) => {
+        const el = h(`<div><span class="lbl">${esc(fr(label || 'Formule M'))}</span><pre class="k2-code ans-code"></pre><button class="cta dark">${esc(btnLabel || 'Copier la formule')}</button></div>`);
+        $('pre', el).textContent = src;
+        $('button', el).addEventListener('click', () => {
+          if (t !== run) return;
+          window.PBQ.clip = src; try { if (navigator.clipboard) navigator.clipboard.writeText(src).catch(() => {}); } catch (e) {}
+          closeAnswer(); act('clip', { text: src }); resolve();
+        });
+        openAnswer(el);
+        const guard = setInterval(() => { if (t !== run) { clearInterval(guard); closeAnswer(); reject(new Cancel()); } }, 300);
+      });
+    },
     /* Cible montrée seulement après deux erreurs ou le troisième indice */
     guide(g) { ctx._g = g; if (ctx._gOn) showGuide(); else if (pbi && !g) pbi.mark(); },
     oops(label, fallback) {
@@ -532,14 +610,14 @@ async function runMission(id, opts = {}) {
     for (let i = active.from; i < def.exs.length; i++) {
       const ex = def.exs[i];
       clearThread(); closeAnswer(); untarget();
-      $('#w-kicker').textContent = fr(`${id === 110 ? 'Défi' : 'Exercice'} ${i + 1}/8`); $('#w-name').textContent = fr(ex.titre || (TX[id] && TX[id][i] ? TX[id][i].t : '')); fitTitle();
+      $('#w-kicker').textContent = fr(`${finale(id) ? 'Défi' : 'Exercice'} ${i + 1}/8`); $('#w-name').textContent = fr(ex.titre || (TX[id] && TX[id][i] ? TX[id][i].t : '')); fitTitle();
       setSteps(i); hintIdx = 0;
       X = makeCtx(def, t, i, pbi); updateHint();
       S.resume = { m: id, i }; store.save();
       await ex.run(X);
       untarget(); closeAnswer();
       const key = `${id}-${i + 1}`;
-      if (!S.ex[key]) { S.ex[key] = 1; S.xp += 25; setXP(S.xp, 25); } else setXP(S.xp);
+      if (!S.ex[key]) { const g = xpEx(id, i); S.ex[key] = 1; S.xp += g; setXP(S.xp, g); } else setXP(S.xp);
       S.resume = { m: id, i: i + 1 }; store.save();
       if (ex.apres) await ex.apres(X);
       await sleep(900, t);
@@ -581,16 +659,17 @@ async function showRewards(def, t) {
     store.save();
   }
   const el = $('#reward'); el.innerHTML = '';
-  const xpM = Object.keys(S.ex).filter(k => k.startsWith(def.id + '-')).length * 25;
+  const xpM = Object.keys(S.ex).filter(k => k.startsWith(def.id + '-')).reduce((a, k) => a + xpEx(def.id, Number(k.split('-')[1]) - 1), 0);
+  const md = modOf(def.id);
   el.appendChild(h(`<div style="display:contents">
     <div class="rw-badge"><img src="img/${r.badge}.webp" alt=""></div>
     <h1>${esc(fr(r.titre))}</h1><p>${esc(fr(r.sous))}</p>
-    <div class="rw-stats"><div><b>+${xpM}</b><span>XP</span></div><div><b>8/8</b><span>${def.id === 110 ? 'Défis' : 'Exercices'}</span></div><div><b>8</b><span>Fiches mémo</span></div></div>
+    <div class="rw-stats"><div><b>+${xpM}</b><span>XP</span></div><div><b>8/8</b><span>${finale(def.id) ? 'Défis' : 'Exercices'}</span></div><div><b>8</b><span>Fiches mémo</span></div></div>
     <div class="rw-list">
       <div class="rw-item"><img src="img/${r.badge}.webp" alt=""><div><small>${first ? 'Nouveau badge' : 'Badge déjà obtenu'}</small><b>${esc(fr(r.badgeNom))}</b></div></div>
       <div class="rw-item obj-it"><img src="img/o-${r.objet}.webp" alt=""><div><small>${first ? 'Nouvel objet pour ton bureau' : 'Objet déjà obtenu'}</small><b>${esc(fr(D.objets[r.objet]))}</b></div></div>
     </div>
-    <p class="rw-prog">${esc(fr(`Module 1 : ${S.done.length * 10} % terminé · ${S.xp} XP cumulés`))}</p>
+    <p class="rw-prog">${esc(fr(`Module ${md} : ${doneIn(md) * 10} % terminé · ${S.xp} XP cumulés`))}</p>
     ${first ? '' : '<p class="rw-note">Mission rejouée : les récompenses n’ont pas été attribuées une deuxième fois.</p>'}
   </div>`));
   const zone = h('<div class="cta-zone"></div>');
@@ -619,23 +698,27 @@ function showFiches(def, t) {
   el.scrollTop = 0;
 }
 async function showSuite(def, t) {
+  const nid = nextOf(def.id), nx = nid ? meta(nid) : null;
   try {
-    if (def.suite) await playCine(def.suite, t, { title: `<b>Le lendemain</b>${def.id < 110 ? 'Mission ' + (def.id + 1) : 'Module 2'}` });
+    if (def.suite) await playCine(def.suite, t, { title: `<b>${esc(fr(def.suiteTitre || 'Le lendemain'))}</b>${nx ? (modOf(nx.id) !== modOf(def.id) ? 'Module ' + modOf(nx.id) : 'Mission ' + nx.id) : 'Module ' + (modOf(def.id) + 1)}` });
   } catch (e) { if (e instanceof Cancel) return; }
-  const nx = meta(def.id + 1);
   const el = $('#reward'); el.innerHTML = '';
+  const pill = s => `<span style="background:rgba(255,255,255,.1); color:#fff">${s}</span>`;
   if (nx) {
+    const newMod = modOf(nx.id) !== modOf(def.id), md = (D.modules || []).find(x => x.n === modOf(nx.id));
     el.appendChild(h(`<div style="display:contents"><div class="sheet-img" style="margin:0 -22px; border-radius:0; height:240px"><img src="img/s-${nx.scene}.webp" alt=""></div>
+      ${newMod && md ? `<p style="text-align:left; margin-top:4px; color:var(--menthe); font-weight:700">${esc(fr(`Nouveau lieu débloqué · Module ${md.n} · ${md.titre}`))}</p>` : ''}
       <p style="text-align:left; margin-top:4px; color:var(--or); font-weight:700">Prochaine mission · ${nx.id}</p>
       <h1 style="text-align:left; margin-top:4px">${esc(fr(nx.titre))}</h1><p style="text-align:left">${esc(fr((M[nx.id] && M[nx.id].accroche) || nx.lieu))}</p>
-      <div class="meta" style="margin-top:12px"><span style="background:rgba(255,255,255,.1); color:#fff">${esc(fr(nx.duree))}</span><span style="background:rgba(255,255,255,.1); color:#fff">8 ${nx.id === 110 ? 'défis' : 'exercices'}</span><span style="background:rgba(255,255,255,.1); color:#fff">200${NB}XP</span></div></div>`));
+      <div class="meta" style="margin-top:12px">${pill(esc(fr(nx.duree)))}${pill(`8 ${finale(nx.id) ? 'défis' : 'exercices'}`)}${pill(`${xpOf(nx.id)}${NB}XP`)}</div></div>`));
     const zone = h('<div class="cta-zone"></div>');
     if (M[nx.id]) zone.appendChild(btn(`Commencer la mission ${nx.id}`, 'cta', () => runMission(nx.id, { from: 0 })));
     zone.appendChild(btn('Retour au parc', M[nx.id] ? 'btn-2' : 'cta', () => { closeMission(); showTab('parc'); renderPark(true); }));
     $$('.btn-2', zone).forEach(b => b.style.color = '#fff');
     el.appendChild(zone);
   } else {
-    el.appendChild(h(`<div style="display:contents"><div class="rw-badge"><img src="img/o-certificat.webp" alt=""></div><h1>Module 1 terminé</h1><p>Le module 2, « Les archives oubliées », t’attend dans une prochaine version du parcours.</p></div>`));
+    const fin = def.finModule || { img: 'o-certificat.webp', titre: `Module ${modOf(def.id)} terminé`, texte: 'La suite du parcours arrive dans une prochaine version.' };
+    el.appendChild(h(`<div style="display:contents"><div class="rw-badge"><img src="img/${fin.img}" alt=""></div><h1>${esc(fr(fin.titre))}</h1><p>${esc(fr(fin.texte))}</p>${fin.liste ? `<div class="rw-list">${fin.liste.map(x => `<div class="rw-item txt"><div><small>${esc(fr(x[0]))}</small><b>${esc(fr(x[1]))}</b></div></div>`).join('')}</div>` : ''}</div>`));
     const zone = h('<div class="cta-zone"></div>');
     zone.appendChild(btn('Retour au parc', 'cta', () => { closeMission(); showTab('parc'); renderPark(true); }));
     el.appendChild(zone);
@@ -646,10 +729,10 @@ async function showSuite(def, t) {
 /* ───────── Contrôle automatique : rien de coupé, rien qui déborde ───────── */
 function controle() {
   const pb = [];
-  const hidden = e => getComputedStyle(e).visibility === 'hidden' || (e.closest('.app') && !e.closest('.app').classList.contains('is-on')) || (e.closest('.layer') && !e.closest('.layer').classList.contains('is-on'));
+  const hidden = e => getComputedStyle(e).visibility === 'hidden' || (e.closest('.app') && !e.closest('.app').classList.contains('is-on')) || (e.closest('.layer') && !e.closest('.layer').classList.contains('is-on')) || (!e.closest('.pq2, .dlg-wrap, .menu') && e.closest('.pbi') && !!e.closest('.pbi').querySelector(':scope > .pq2.on'));
   const cut = (e, nom) => { if (e.offsetWidth && !hidden(e) && overflows(e)) pb.push(`${nom} : texte coupé (« ${e.textContent.trim().slice(0, 40)} »)`); };
   $$('.tbl th, .tbl td').forEach(c => cut(c, 'cellule'));
-  $$('.rb-cmd, .rb-tab, .ptab, .pane-tab, .conn, .frow span, .nav-obj, .sel-box, .fbtn, .w-title b, .v-title, .choice, .pick, .field label, .step, .tsel, .menu button, .mcard h4, .mcard li, .dicon').forEach(e => cut(e, e.className.split(' ')[0]));
+  $$('.rb-cmd, .rb-tab, .ptab, .pane-tab, .conn, .frow span, .nav-obj, .sel-box, .fbtn, .w-title b, .v-title, .choice, .pick, .field label, .step, .tsel, .menu button, .mcard h4, .mcard li, .dicon, .q2-hn, .q2-qbtn, .q2-scope, .chipb, .q2-qual span, .q2-dist span').forEach(e => cut(e, e.className.split(' ')[0]));
   $$('.bub.in:not(.gone) .t').forEach(b => { const r = b.getBoundingClientRect(), tr = thread.getBoundingClientRect(); if (b.closest('.work.is-on') && r.top < tr.top - .5) pb.push(`bulle coupée (« ${b.textContent.slice(0, 40)} »)`); });
   $$('.vis').forEach(v => { const p = v.closest('.page'); if (!p) return; const a = v.getBoundingClientRect(), b = p.getBoundingClientRect(); if (a.width && (a.right > b.right + 1 || a.bottom > b.bottom + 1)) pb.push('visuel hors de la page'); });
   return pb;
@@ -662,7 +745,7 @@ function start() {
 }
 
 window.PBQ = {
-  start, mission, M, S, D, fr, esc, h, eur, nfmt, dfr, norm, clone, $, $$, sleep: (ms) => sleep(ms, run), act, avatar, person,
+  start, mission, M, S, D, fr, esc, h, eur, nfmt, dfr, norm, clone, $, $$, sleep: (ms) => sleep(ms, run), act, avatar, person, clip: '', prevOf, nextOf, modOf, xpOf, renderPark,
   target, untarget, shake, hurry, toast, bubble, controle, projectBefore, project0, runMission, closeMission, store,
   get run() { return run; }, get X() { return X; }, get active() { return active; },
   reset() { localStorage.removeItem(KEY); location.reload(); }

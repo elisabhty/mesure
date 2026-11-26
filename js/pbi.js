@@ -230,7 +230,7 @@ class PBI {
   mark(...sels) {
     $$('.is-target', this.el).forEach(e => e.classList.remove('is-target'));
     this.marks = sels.flat().filter(Boolean);
-    this._scrollMark = this.marks.length > 0;
+    this._scrollMark = this._scrollGrid = this.marks.length > 0;
     this.applyMarks();
   }
   applyMarks() {
@@ -241,6 +241,14 @@ class PBI {
       this._scrollMark = false;
       const pb = t.closest('.pane-body'), a = pb.getBoundingClientRect(), r = t.getBoundingClientRect(), k = a.height / pb.clientHeight || 1;
       if (r.top < a.top || r.bottom > a.bottom) pb.scrollTop += (r.top - a.top) / k - 16;
+    }
+    /* Power Query : un en-tête ciblé hors de l'écran fait défiler la grille horizontalement */
+    const g = this._scrollGrid && $('.q2-head .is-target', this.el);
+    if (g) {
+      this._scrollGrid = false;
+      const box = g.closest('.q2-grid'), rn = $('.q2-hc.rn', box), hc = g.closest('.q2-hc') || g;
+      const a = box.getBoundingClientRect(), r = hc.getBoundingClientRect(), k = a.width / box.clientWidth || 1, left = a.left + (rn ? rn.getBoundingClientRect().width : 34);
+      if (r.left < left || r.right > a.right) box.scrollLeft += (r.left - left) / k - 12;
     }
   }
   load(P) { this.P = P; this.st.selTable = null; this.st.selVis = null; this.st.selCol = null; this.render(); }
@@ -513,6 +521,8 @@ class PBI {
     }
     host.appendChild(m);
     this.applyMarks();
+    /* L'ancre a pu être redessinée (sélection de colonne) : on reprend son double dans le rendu actuel */
+    if (!anchor.isConnected && anchor.dataset) { const k = anchor.dataset.q ? 'q' : anchor.dataset.a ? 'a' : null; const nb = k && host.querySelector(`[data-${k}="${CSS.escape(anchor.dataset[k])}"]`); if (nb) anchor = nb; }
     const hb = host.getBoundingClientRect(), ab = anchor.getBoundingClientRect(), Z = hb.width / host.offsetWidth || 1;
     let x = (ab.left - hb.left) / Z, y = (ab.bottom - hb.top) / Z + 2;
     requestAnimationFrame(() => {
@@ -867,6 +877,6 @@ class PBI {
 function clampDec(n) { return Math.max(0, Math.min(4, n)); }
 
 PBI.renderChart = renderChart; PBI.PAL = PAL; PBI.niceMax = niceMax;
-PBI.convert = convert; PBI.evalQuery = evalQuery; PBI.TYPES = TYPES; PBI.show = show; PBI.I = I;
+PBI.convert = convert; PBI.evalQuery = evalQuery; PBI.stepFormula = (q, i) => stepFormula(q.steps[i])(q).replace(/^= /, ''); PBI.TYPES = TYPES; PBI.show = show; PBI.I = I;
 window.PBI = PBI;
 })();
