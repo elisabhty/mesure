@@ -130,6 +130,11 @@ const def = {
     await x.wait({ 'lab.a': k => { setA(k); if (tried.size >= 3 && tried.has('sum') && tried.has('count')) return true; } });
     x.untarget();
     await x.ok('Somme donne 9 billets, Nombre donne 5 ventes : deux réponses à deux questions différentes.');
+    await K.jeu(x, { app: 'jeu105', title: 'Somme ou Nombre ?', btn: 'Vérifier', todo: 'Pour chaque question, choisis Somme ou Nombre.',
+      options: [['sum', 'Somme'], ['cnt', 'Nombre']],
+      rows: [['a', 'Combien de billets ont été vendus ?', 'sum', 'Les billets s’additionnent : Somme des quantités.'], ['b', 'Combien de ventes ont eu lieu ?', 'cnt', 'Chaque vente est une ligne : on les compte avec Nombre.'], ['c', 'Combien de lignes contient la colonne Quantite ?', 'cnt', 'Compter des lignes, c’est le rôle de Nombre.'], ['d', 'Quel total donnent les quantités additionnées ?', 'sum', 'Additionner les valeurs, c’est le rôle de Somme.']] });
+    await x.ok('Des billets à additionner : Somme. Des ventes à compter : Nombre.');
+    x.app('lecon');
     await x.pixel('Power BI propose aussi Ne pas résumer, pour afficher chaque valeur sans la regrouper.');
     await x.pixel('Les options disponibles dépendent du type : on ne peut pas additionner du texte, mais on peut le compter.');
     $('[data-sec="2"]', card).style.display = ''; card.firstElementChild.scrollTo({ top: 9999, behavior: 'smooth' });

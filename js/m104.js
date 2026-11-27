@@ -186,6 +186,10 @@ const def = {
     await x.wait({ 'lab.f': v => { $$('[data-g="f"] button', card).forEach(b => b.classList.toggle('on', b.dataset.v === v)); $('[data-o="f"]', card).textContent = show[v]; if (v === '0') return true; } });
     x.untarget();
     await x.ok('Affichée 40, la valeur reste 39,99 dans les calculs. Le format ne remplace ni une conversion ni un arrondi.');
+    await K.jeu(x, { app: 'jeu104', title: 'Le bon type pour chaque valeur', btn: 'Vérifier', todo: 'Range chaque valeur dans le type qui lui convient.',
+      options: [['txt', 'Texte'], ['ent', 'Nombre entier'], ['dec', 'Nombre décimal'], ['fix', 'Nombre décimal fixe']],
+      rows: [['a', 'Le code d’un portique : 007', 'txt', 'Un code n’est pas une quantité : il reste en texte, avec ses zéros.'], ['b', 'Un nombre de billets vendus : 3', 'ent', 'Des billets se comptent un par un : c’est un nombre entier.'], ['c', 'Une température relevée : 21,5', 'dec', 'Une mesure peut avoir des décimales : c’est un nombre décimal.'], ['d', 'Le montant d’une vente : 39,99 €', 'fix', 'Un montant financier demande une précision maîtrisée : le décimal fixe.']] });
+    await x.ok('Un code en texte, une quantité en entier, une mesure en décimal, un montant en décimal fixe.');
   },
 
   exs: [

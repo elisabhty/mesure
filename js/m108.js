@@ -163,6 +163,11 @@ const def = {
     await x.ok('7 billets seniors, 224 € TTC.');
     await x.pixel('Senior et Étudiant dans un même segment : on garde les ventes de l’une OU l’autre catégorie.');
     await x.pixel('Ajoute une période dans un autre segment : chaque vente doit alors respecter les deux critères, ET.');
+    await K.jeu(x, { app: 'jeu108', title: 'OU, ou bien ET ?', btn: 'Vérifier', todo: 'Pour chaque sélection, choisis : OU ou ET.',
+      options: [['ou', 'OU : l’une ou l’autre'], ['et', 'ET : les deux à la fois']],
+      rows: [['a', 'Senior et Étudiant cochés dans le même segment', 'ou', 'Dans un même segment, chaque valeur cochée s’ajoute : OU.'], ['b', 'Web dans le segment Canal, Senior dans le segment Type_Billet', 'et', 'Deux segments différents : chaque vente doit respecter les deux, ET.'], ['c', 'Adulte et Enfant cochés dans le segment Type_Billet', 'ou', 'Deux valeurs d’un même segment : l’une OU l’autre.'], ['d', 'Étudiant dans un segment, une période dans un autre', 'et', 'Un critère par segment : les ventes doivent respecter les deux, ET.']] });
+    await x.ok('Même segment : OU. Segments différents : ET.');
+    x.app('lecon');
     show(5);
     await x.pixel('Dernier point : nos trois tables ne sont pas reliées. Un filtre sur la billetterie ne se transmet ni aux entrées ni aux passages.');
     await x.pixel('Les relations entre tables viendront plus tard, au module 3.');

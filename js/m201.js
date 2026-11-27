@@ -62,8 +62,10 @@ const def = {
     await x.ok('Ligne 6. Au-dessus : un titre, des notes et une ligne vide. Plus bas, un commentaire et un total se glissent parmi les interventions.');
     show(3);
     await x.pixel('Notre travail du jour : tout recenser, et ranger chaque problème dans la bonne case.');
-    await K2.ask(x, 'Une date indique le 31 février 2026. C’est…', [{ t: 'Une anomalie certaine', ok: true }, { t: 'Un cas à investiguer', msg: 'Le 31 février n’existe pas : le fichier seul suffit à le prouver.' }]);
-    await x.ok('Certaine : cette date n’existe pas. La bonne date, elle, reste à retrouver avec Oscar.');
+    await K.jeu(x, { app: 'jeu201', title: 'Certaine, ou à investiguer ?', btn: 'Vérifier', todo: 'Range chaque constat : anomalie certaine, ou cas à investiguer.',
+      options: [['cert', 'Anomalie certaine'], ['inv', 'À investiguer']],
+      rows: [['a', 'Une date au 31 février 2026', 'cert', 'Le 31 février n’existe pas : le fichier seul suffit à le prouver.'], ['b', 'Un identifiant présent deux fois', 'inv', 'Deux lignes peuvent décrire deux événements, ou une copie : seule une source métier tranche.'], ['c', 'Du texte dans la colonne des coûts', 'cert', 'Un coût s’écrit en chiffres : du texte à cet endroit est une anomalie certaine.'], ['d', 'Un coût négatif', 'inv', 'Un avoir ou une erreur de saisie ? Il faut poser la question au service.']] });
+    await x.ok('Le fichier prouve les anomalies certaines. Les cas à investiguer attendent une réponse du métier.');
   },
   exs: [
     /* 1 — Ouvrir sans rien charger */
@@ -310,7 +312,7 @@ const def = {
       EX7(pbi.P);
       await x.ok('Sept anomalies certaines, cinq cas à investiguer. Le registre est enregistré dans le projet.');
       await x.pixel('Dernière chose : dans quel ordre attaquer le nettoyage, pour qu’il soit reproductible ?');
-      const O = K.ordering({ title: 'Stratégie de nettoyage', intro: 'Touche les étapes dans l’ordre.', btn: 'Valider la stratégie',
+      const O = K.ordering({ title: 'Stratégie de nettoyage', intro: 'Glisse les étapes dans l’ordre.', btn: 'Valider la stratégie', start: ['str', 'cor', 'iso', 'dia'],
         items: [['iso', 'Isoler la préparation, sans la charger'], ['str', 'Retrouver la structure : en-têtes et lignes parasites'], ['dia', 'Diagnostiquer chaque colonne, sans corriger'], ['cor', 'Corriger seulement avec une règle ou une preuve']] });
       x.app('ordre201', O.el);
       x.todo('Ordonne les quatre étapes de la stratégie.');

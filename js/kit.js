@@ -38,62 +38,52 @@ function board(title, intro) {
   return { el, body: $('.board', el) };
 }
 
-/* Association : chaque ligne reçoit une valeur choisie dans un menu. Émet match.check {values, rows} */
+/* Association : deux réponses possibles → pile de cartes à trier ; sinon → paires à relier. Émet match.pick et match.check {values} */
 function matching(spec) {
-  const B = board(spec.title, spec.intro);
-  const vals = {};
-  const lab = id => (spec.options.find(o => o[0] === id) || [])[1];
-  spec.rows.forEach(r => {
-    const row = h(`<div class="bt-row"><div class="bt-file">${spec.plain ? '' : r.icon ? `<span class="ficon ${r.icon}">${esc(r.tag || '')}</span>` : `<span class="ficon" style="background:#E8EAF2; color:#8A90AA">${FILE}</span>`}<span><b>${esc(r.label)}</b>${r.sub ? `<small style="display:block; font-size:12px; color:var(--gris); margin-top:1px">${esc(fr(r.sub))}</small>` : ''}</span></div><button class="pick" data-row="${r.id}">${esc(spec.placeholder || 'Choisir le format')}</button></div>`);
-    const pick = $('.pick', row);
-    pick.addEventListener('click', () => menu(pick, spec.options.map(o => [o[0], o[1], vals[r.id] === o[0]]), v => {
-      vals[r.id] = v; pick.textContent = lab(v); pick.className = 'pick set';
-      act('match.pick', { row: r.id, value: v });
-    }, B.el));
-    B.body.appendChild(row);
-  });
-  const go = h(`<button class="cta dark" style="margin-top:14px">${esc(spec.btn || 'Vérifier mes réponses')}</button>`);
-  go.addEventListener('click', () => { if (act('match.check', { values: { ...vals } }) === 'no') shake(go); });
-  B.body.appendChild(go);
-  B.mark = (ok, bad) => {
-    $$('.pick', B.body).forEach(p => { const id = p.dataset.row; p.classList.remove('ok', 'bad'); if (bad && bad.includes(id)) p.classList.add('bad'); if (ok && ok.includes(id)) p.classList.add('ok'); });
-  };
-  B.lock = () => { $$('button', B.body).forEach(b => b.disabled = true); };
-  return B;
+  if (spec.options.length === 2) {
+    const B = window.J.tri({ title: spec.title, intro: spec.intro, options: spec.options, rows: spec.rows.map(r => ({ id: r.id, t: r.label, sub: r.sub })), btn: spec.btn || 'Vérifier mes réponses', ev: 'match' });
+    const mark = B.mark; B.mark = (ok, bad) => (ok || bad) ? mark(bad || [], ok || undefined) : mark();
+    B.body = B.el.firstElementChild;
+    return B;
+  }
+  return window.J.pairs(spec);
 }
 
-/* Ordre : on touche les étiquettes dans l'ordre, on retire une étape en la touchant. Émet order.check {order} */
-function ordering(spec) {
-  const B = board(spec.title, spec.intro);
-  const slots = h(`<div class="order-slots"></div>`), pool = h(`<div class="pool"></div>`);
-  const order = [];
-  const label = id => spec.items.find(i => i[0] === id)[1];
-  const draw = () => {
-    slots.innerHTML = '';
-    for (let k = 0; k < spec.items.length; k++) {
-      const id = order[k];
-      const s = h(`<button class="slot ${id ? 'full' : ''}" ${id ? '' : 'disabled'}><i>${k + 1}</i>${id ? esc(fr(label(id))) : esc(fr(spec.empty ? spec.empty(k) : `Étape ${k + 1} à compléter`))}</button>`);
-      if (id) s.addEventListener('click', () => { order.splice(k, 1); draw(); act('order.change', { order: [...order] }); });
-      slots.appendChild(s);
-    }
-    $$('.chip', pool).forEach(c => c.classList.toggle('used', order.includes(c.dataset.id)));
-  };
-  spec.items.forEach(([id, t]) => {
-    const c = h(`<button class="chip" data-id="${id}">${esc(fr(t))}</button>`);
-    c.addEventListener('click', () => { if (order.includes(id)) return; order.push(id); draw(); act('order.change', { order: [...order] }); });
-    pool.appendChild(c);
-  });
-  B.body.appendChild(slots); B.body.appendChild(pool);
-  const foot = h(`<div class="board-foot"><button class="btn-2">Recommencer</button><button class="cta dark">${esc(spec.btn || 'Valider')}</button></div>`);
-  const go = $('.cta', foot), reset = $('.btn-2', foot);
-  go.addEventListener('click', () => { if (act('order.check', { order: [...order] }) === 'no') shake(go); });
-  reset.addEventListener('click', () => { order.length = 0; draw(); act('order.change', { order: [] }); });
-  B.body.appendChild(foot);
-  B.order = order; B.draw = draw;
-  B.flag = bad => $$('.slot', slots).forEach((s, k) => s.classList.toggle('bad', !!bad && bad.includes(k)));
-  B.lock = () => { $$('button', B.body).forEach(b => b.disabled = true); };
-  draw();
-  return B;
+/* Ordre : des cartes à faire glisser à leur place. Émet order.change et order.check {order} */
+function ordering(spec) { return window.J.order(spec); }
+
+/* Mini-jeu de leçon, avec sa solution et une explication par erreur.
+   Tri : rows [id, texte, case, explication]. Paires : rows [id, libellé, partenaire, explication]. Ordre : items dans le bon ordre, start mélangé, why[position]. */
+async function jeu(x, spec) {
+  const T = { title: spec.title, intro: spec.intro, btn: spec.btn || 'Vérifier' };
+  if (spec.pairs) {
+    const B = window.J.pairs({ ...T, rows: spec.rows.map(r => ({ id: r[0], label: r[1] })), options: spec.options });
+    x.app(spec.app, B.el); x.todo(spec.todo);
+    await x.wait({ 'match.pick': () => { B.mark(); }, 'match.check': ({ values }) => {
+      if (spec.rows.some(r => !values[r[0]])) return x.oops('', spec.miss || 'Relie chaque élément avant de vérifier.');
+      const bad = spec.rows.filter(r => values[r[0]] !== r[2]);
+      B.mark(spec.rows.filter(r => !bad.includes(r)).map(r => r[0]), bad.map(r => r[0]));
+      if (!bad.length) { B.lock(); return true; }
+      return x.oops('', bad[0][3]);
+    } });
+  } else if (spec.items) {
+    const B = window.J.order({ ...T, items: spec.items, start: spec.start });
+    x.app(spec.app, B.el); x.todo(spec.todo);
+    await x.wait({ 'order.change': () => {}, 'order.check': ({ order }) => {
+      const k = order.findIndex((id, i) => id !== spec.items[i][0]);
+      if (k < 0) { B.lock(); return true; }
+      B.flag([k]); return x.oops('', spec.why[k]);
+    } });
+  } else {
+    const B = window.J.tri({ ...T, options: spec.options, rows: spec.rows.map(r => ({ id: r[0], t: r[1] })), ev: 'jeu' });
+    x.app(spec.app, B.el); x.todo(spec.todo);
+    await x.wait({ 'jeu.pick': () => {}, 'jeu.check': ({ values }) => {
+      const bad = spec.rows.filter(r => values[r[0]] !== r[2]);
+      B.mark(bad.map(r => r[0]));
+      if (!bad.length) { B.lock(); return true; }
+      return x.oops('', bad[0][3]);
+    } });
+  }
 }
 
 /* Bureau d'ordinateur avec des applications. Émet desk.open {id} */
@@ -178,5 +168,5 @@ async function saveStep(x, valid, msgs = {}) {
   x.guide();
 }
 
-window.K = { menu, closeMenu, board, matching, ordering, desktop, lesson, typo, ICONS, norm, pageOf, visOf, ready, sig, titleIs, guard, saveStep };
+window.K = { menu, closeMenu, board, matching, ordering, jeu, desktop, lesson, typo, ICONS, norm, pageOf, visOf, ready, sig, titleIs, guard, saveStep };
 })();

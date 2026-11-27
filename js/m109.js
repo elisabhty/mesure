@@ -225,6 +225,11 @@ const def = {
     const seen = new Set();
     await x.wait({ 'lab.k': () => {}, 'lab.a': m => { drawA(m); seen.add(m); if (seen.has('1') && seen.has('2')) return true; } });
     x.untarget();
+    await K.jeu(x, { app: 'jeu109', title: 'Aligner ou distribuer ?', btn: 'Vérifier', todo: 'Pour chaque retouche, choisis : aligner ou distribuer.',
+      options: [['al', 'Aligner'], ['di', 'Distribuer']],
+      rows: [['a', 'Mettre le haut des quatre cartes à la même hauteur', 'al', 'Un même axe pour tous les objets : c’est aligner.'], ['b', 'Laisser le même écart entre chaque carte', 'di', 'Des espaces réguliers entre les objets : c’est distribuer.'], ['c', 'Faire commencer deux tableaux au même bord gauche', 'al', 'Un bord commun : c’est aligner.'], ['d', 'Répartir trois visuels régulièrement sur la largeur de la page', 'di', 'Des écarts égaux sur la largeur : c’est distribuer.']] });
+    await x.ok('Aligner place sur un axe, distribuer égalise les espaces.');
+    x.app('lecon');
     await x.pixel('Dans Power BI, chaque objet a quatre propriétés : X, Y, largeur et hauteur, en pixels. Les modifier ne change jamais ses données.');
     show(3);
     await x.pixel('Un thème applique des règles communes à tout le rapport : couleurs, textes, arrière-plans. Une mise en forme posée directement sur un visuel reste prioritaire.');

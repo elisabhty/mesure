@@ -30,6 +30,10 @@ Chaque manipulation est vérifiée sur l'état réel des requêtes calculé par 
 
 Le logiciel occupe toute la largeur sous l'en-tête. En bas, une seule zone réunit la dernière réplique, la consigne en jaune et les questions, qui poussent l'éditeur vers le haut au lieu de le recouvrir. Dès que l'on agit, la réplique s'efface ; la poignée rouvre toute la conversation de l'exercice. Dans les boîtes de dialogue, la consigne avance pas à pas, une action à la fois. Power Query s'ouvre directement à chaque exercice du module 2, en 13 à 14 px, avec des cibles tactiles plus grandes ; le canevas du rapport se zoome (Ajuster, 150 %, 200 %).
 
+## Mini-jeux et style
+
+L'appli suit le style verre clair d'iOS : barre d'onglets flottante, cartes et feuilles translucides, police de l'iPhone. Les questions et les leçons se jouent au doigt : des cartes à glisser dans des cases ou à balayer à gauche et à droite, des étapes à remettre dans l'ordre, des paires à relier par un fil, et des quiz qui répondent tout de suite. Power BI et Power Query gardent leurs gestes habituels.
+
 ## Technique
 
 HTML, CSS et JavaScript sans dépendance ni étape de build. Progression enregistrée dans le navigateur (`localStorage`).
@@ -38,10 +42,11 @@ HTML, CSS et JavaScript sans dépendance ni étape de build. Progression enregis
 - `js/pbi.js` : simulateur Power BI
 - `js/pqengine.js` : moteur Power Query (étapes, langage M, profils)
 - `js/pq2.js`, `js/pq2b.js`, `js/pq2c.js` : éditeur Power Query mobile
+- `js/jeux.js` : mini-jeux (trier, balayer, ordonner, relier)
 - `js/kit.js`, `js/kit2.js` : planches et boucles d'exercice partagées
 - `js/m101.js` … `js/m110.js`, `js/m201.js` … `js/m210.js` : les missions
 - `js/textes.js`, `js/textes2.js` : indices et erreurs contextuelles
 - `js/data2.js` : fichiers d'entraînement du module 2
 - `img/` : illustrations générées avec ElevenLabs
 
-Police : Bricolage Grotesque (SIL Open Font License, voir `fonts/OFL.txt`). Données fictives.
+Police : celle du système (SF Pro sur iPhone). Données fictives.

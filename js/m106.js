@@ -86,6 +86,11 @@ const def = {
     await x.ok('Le niveau de détail change, mais le total reste le même : ce sont les mêmes données.');
     $('[data-sec="2"]', card).style.display = ''; card.firstElementChild.scrollTo({ top: 9999, behavior: 'smooth' });
     await x.pixel('Trier change l’ordre d’affichage. Filtrer change les données prises en compte. Deux opérations différentes.');
+    await K.jeu(x, { app: 'jeu106', title: 'Trier ou filtrer ?', btn: 'Vérifier', todo: 'Pour chaque demande, choisis : trier ou filtrer.',
+      options: [['tri', 'Trier'], ['flt', 'Filtrer']],
+      rows: [['a', 'Afficher les ventes du montant le plus élevé au plus bas', 'tri', 'L’ordre change, mais toutes les ventes restent : c’est un tri.'], ['b', 'Ne garder que les ventes du guichet', 'flt', 'Les autres ventes ne comptent plus : c’est un filtre.'], ['c', 'Classer les canaux par ordre alphabétique', 'tri', 'Les canaux changent de place, aucun ne disparaît : c’est un tri.'], ['d', 'Exclure les ventes passées sur Internet', 'flt', 'Des ventes sortent du calcul : c’est un filtre.']] });
+    await x.ok('Trier réorganise, filtrer retire du calcul.');
+    x.app('lecon');
     await x.say('gabriel', 'Si le montant moyen est de 60 € au guichet et de 72 € sur Internet, puis-je faire la moyenne des deux ?');
     await x.pixel('Pas forcément ! Si les canaux n’ont pas le même nombre de ventes, la moyenne globale doit être recalculée sur toutes les lignes.');
     K.ready(x, 'page_001');

@@ -99,6 +99,10 @@ B003;1</div>
     x.untarget();
     await x.ok('Avec UTF-8, « Entrée » retrouve son accent.');
     await x.pixel('Dans Power BI, le connecteur Texte/CSV permet de régler l’origine du fichier, le délimiteur et la détection des types.');
+    await K.jeu(x, { app: 'jeu103', title: 'Quel réglage corriger ?', btn: 'Vérifier', todo: 'Pour chaque symptôme, choisis le réglage à corriger.',
+      options: [['delim', 'Délimiteur'], ['enc', 'Encodage']],
+      rows: [['a', 'Toutes les valeurs arrivent dans une seule colonne', 'delim', 'Les colonnes sont mal découpées : c’est le délimiteur qu’il faut revoir.'], ['b', '« EntrÃ©e » s’affiche au lieu de « Entrée »', 'enc', 'Les accents sont mal lus : c’est l’encodage.'], ['c', 'Les montants et les dates restent collés dans la même cellule', 'delim', 'Deux valeurs dans une même cellule : le séparateur n’est pas le bon.'], ['d', 'Les noms des attractions perdent leurs accents', 'enc', 'Des caractères illisibles à la place des accents : c’est l’encodage.']] });
+    await x.ok('Colonnes mal découpées : le délimiteur. Accents illisibles : l’encodage.');
   },
 
   exs: [

@@ -582,22 +582,10 @@ K2.REG = [
 /* Carte de constats chiffrés */
 K2.facts = (items) => `<div class="k2-facts">${items.map(i => `<div><b>${esc(fr(String(i[0])))}</b><span>${esc(fr(i[1]))}</span></div>`).join('')}</div>`;
 /* Planche de classement à deux choix par ligne, validée globalement. Émet k2.pick puis k2.check {values} */
+/* Tri : une pile de cartes à ranger dans deux à quatre cases. Émet k2.pick et k2.check {values} */
 K2.sorter = (spec) => {
-  const el = h(`<div><div class="${spec.bare ? '' : 'board '}k2-sort">${spec.title ? `<h3>${esc(fr(spec.title))}</h3>` : ''}${spec.intro ? `<p>${esc(fr(spec.intro))}</p>` : ''}<div class="k2-rows"></div><button class="cta dark k2-go">${esc(spec.btn || 'Vérifier')}</button></div></div>`);
-  const vals = {};
-  const rows = $('.k2-rows', el);
-  spec.rows.forEach(r => {
-    const row = h(`<div class="k2-row" data-r="${r.id}"><div class="k2-t"><b>${esc(fr(r.t))}</b>${r.sub ? `<small>${esc(fr(r.sub))}</small>` : ''}</div><div class="seg k2-seg n${spec.options.length}">${spec.options.map(o => `<button data-v="${o[0]}">${esc(fr(o[1]))}</button>`).join('')}</div></div>`);
-    $$('button', row).forEach(b => b.addEventListener('click', () => { vals[r.id] = b.dataset.v; $$('button', row).forEach(y => y.classList.toggle('on', y === b)); row.classList.remove('bad', 'ok'); act('k2.pick', { row: r.id, value: b.dataset.v }); }));
-    rows.appendChild(row);
-  });
-  const go = $('.k2-go', el);
-  go.addEventListener('click', () => { if (act('k2.check', { values: { ...vals } }) === 'no') shake(go); });
-  const B = { el };
-  B.mark = (bad) => $$('.k2-row', el).forEach(r => { r.classList.toggle('bad', bad.includes(r.dataset.r)); r.classList.toggle('ok', !bad.includes(r.dataset.r) && !!vals[r.dataset.r]); });
-  B.lock = () => $$('button', el).forEach(b => b.disabled = true);
-  B.vals = vals;
-  window.K.typo(el);
+  const B = window.J.tri({ ...spec, rows: spec.rows.map(r => ({ id: r.id, t: r.t, sub: r.sub })), ev: 'k2' });
+  const mark = B.mark; B.mark = bad => mark(bad || []);
   return B;
 };
 

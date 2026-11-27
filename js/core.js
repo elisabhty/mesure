@@ -257,7 +257,8 @@ function cancelRun() {
 
 /* ───────── Mission : couches ───────── */
 const missionEl = $('#mission'), layers = { cine: $('#cine'), work: $('#work'), reward: $('#reward') };
-function showLayer(n) { for (const k in layers) { layers[k].classList.toggle('is-on', k === n); layers[k].inert = k !== n; } if (n === 'work') requestAnimationFrame(() => fitTitle()); }
+const screenEl = $('#screen');
+function showLayer(n) { for (const k in layers) { layers[k].classList.toggle('is-on', k === n); layers[k].inert = k !== n; } screenEl.classList.toggle('on-photo', n === 'cine'); if (n === 'work') requestAnimationFrame(() => fitTitle()); }
 
 /* Cinématique */
 const cineBg = $('#cine-bg'), cineStack = $('#cine-stack');
@@ -531,6 +532,22 @@ function makeCtx(m, t, exIndex, pbi) {
     code(text, label) { endTodo(); codeBubble(text, label); return sleep(900, t); },
     /* Question à choix multiples : des pastilles à cocher, validées ensemble */
     multi(q, options, check, btnLabel) {
+      /* Affirmations longues : une pile de cartes à balayer, à droite pour cocher, à gauche pour écarter */
+      if (window.J && options.some(o => String(o.t).length > 26)) return new Promise((resolve, reject) => {
+        const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}</div>`);
+        const T = window.J.tri({ bare: true, options: [['non', 'Écarter'], ['oui', 'Cocher']], rows: options.map(o => ({ id: String(o.v), t: o.t })), btn: btnLabel || 'Valider',
+          help: 'Glisse chaque carte : à droite pour la cocher, à gauche pour l’écarter.', onPick: () => {},
+          check: vals => {
+            if (t !== run) return;
+            const sel = options.filter(o => vals[String(o.v)] === 'oui').map(o => o.v);
+            const r = check(sel);
+            if (r === true) { T.lock(); setTimeout(() => { if (t !== run) return; closeAnswer(); resolve(sel); }, window.PBQ_FAST ? 30 : 550); return true; }
+            const bad = Array.isArray(r) ? r : [r]; ctx.oops(bad[0] || '', bad[1]); return false;
+          } });
+        el.appendChild(T.el);
+        openAnswer(el);
+        const guard = setInterval(() => { if (t !== run) { clearInterval(guard); closeAnswer(); reject(new Cancel()); } }, 300);
+      });
       return new Promise((resolve, reject) => {
         const sel = new Set();
         const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="mchips"></div><button class="cta dark">${esc(btnLabel || 'Valider')}</button></div>`);
@@ -585,8 +602,9 @@ function makeCtx(m, t, exIndex, pbi) {
         options.forEach(o => {
           const b = h(`<button class="choice">${esc(fr(o.t))}</button>`);
           b.addEventListener('click', () => {
-            if (t !== run) return;
-            if (o.ok) { closeAnswer(); resolve(o); return; }
+            if (t !== run || el.dataset.done) return;
+            /* Bonne réponse : la carte passe au vert, puis la question se referme */
+            if (o.ok) { el.dataset.done = '1'; b.classList.add('yes'); $$('.choice', el).forEach(c => { if (c !== b) c.classList.add('fade'); }); setTimeout(() => { if (t !== run) return; closeAnswer(); resolve(o); }, window.PBQ_FAST ? 30 : 620); return; }
             ctx.oops(o.err || '', o.msg); b.classList.add('no'); shake(b);
           });
           $('.choices', el).appendChild(b);
@@ -676,7 +694,7 @@ async function runMission(id, opts = {}) {
     if (def.debut) def.debut(P, pbi);
     if (active.from === 0 && def.intro && !opts.noIntro) await playCine(def.intro, t, { title: `<b>Mission ${id}</b>${esc(fr(def.lieu || meta(id).lieu))}` });
     showLayer('work');
-    if (active.from === 0 && def.lecon) {
+    if (active.from === 0 && def.lecon && !opts.noLesson) {
       $('#w-kicker').textContent = fr(`Mission ${id} · Leçon`); $('#w-name').textContent = fr(def.leconTitre || 'Comprendre avant de pratiquer'); fitTitle();
       setSteps(0, true); hintIdx = 0; X = makeCtx(def, t, -1, pbi); X.hints = []; updateHint();
       await def.lecon(X);
@@ -706,7 +724,7 @@ async function runMission(id, opts = {}) {
 }
 function closeMission() {
   cancelRun(); closeAnswer(); untarget(); closeSheet();
-  missionEl.classList.remove('is-open'); missionEl.inert = true;
+  missionEl.classList.remove('is-open'); missionEl.inert = true; screenEl.classList.remove('on-photo');
   $('#tabbar').inert = false;
   const t = $('.tab.is-on').dataset.tab; for (const k in views) views[k].inert = k !== t;
   active = null; X = null;
@@ -778,18 +796,17 @@ async function showSuite(def, t) {
     if (def.suite) await playCine(def.suite, t, { title: `<b>${esc(fr(def.suiteTitre || 'Le lendemain'))}</b>${nx ? (modOf(nx.id) !== modOf(def.id) ? 'Module ' + modOf(nx.id) : 'Mission ' + nx.id) : 'Module ' + (modOf(def.id) + 1)}` });
   } catch (e) { if (e instanceof Cancel) return; }
   const el = $('#reward'); el.innerHTML = '';
-  const pill = s => `<span style="background:rgba(255,255,255,.1); color:#fff">${s}</span>`;
+  const pill = s => `<span>${s}</span>`;
   if (nx) {
     const newMod = modOf(nx.id) !== modOf(def.id), md = (D.modules || []).find(x => x.n === modOf(nx.id));
     el.appendChild(h(`<div style="display:contents"><div class="sheet-img" style="margin:0 -22px; border-radius:0; height:240px"><img src="img/s-${nx.scene}.webp" alt=""></div>
-      ${newMod && md ? `<p style="text-align:left; margin-top:4px; color:var(--menthe); font-weight:700">${esc(fr(`Nouveau lieu débloqué · Module ${md.n} · ${md.titre}`))}</p>` : ''}
-      <p style="text-align:left; margin-top:4px; color:var(--or); font-weight:700">Prochaine mission · ${nx.id}</p>
+      ${newMod && md ? `<p class="rw-next mod">${esc(fr(`Nouveau lieu débloqué · Module ${md.n} · ${md.titre}`))}</p>` : ''}
+      <p class="rw-next">Prochaine mission · ${nx.id}</p>
       <h1 style="text-align:left; margin-top:4px">${esc(fr(nx.titre))}</h1><p style="text-align:left">${esc(fr((M[nx.id] && M[nx.id].accroche) || nx.lieu))}</p>
       <div class="meta" style="margin-top:12px">${pill(esc(fr(nx.duree)))}${pill(`8 ${finale(nx.id) ? 'défis' : 'exercices'}`)}${pill(`${xpOf(nx.id)}${NB}XP`)}</div></div>`));
     const zone = h('<div class="cta-zone"></div>');
     if (M[nx.id]) zone.appendChild(btn(`Commencer la mission ${nx.id}`, 'cta', () => runMission(nx.id, { from: 0 })));
     zone.appendChild(btn('Retour au parc', M[nx.id] ? 'btn-2' : 'cta', () => { closeMission(); showTab('parc'); renderPark(true); }));
-    $$('.btn-2', zone).forEach(b => b.style.color = '#fff');
     el.appendChild(zone);
   } else {
     const fin = def.finModule || { img: 'o-certificat.webp', titre: `Module ${modOf(def.id)} terminé`, texte: 'La suite du parcours arrive dans une prochaine version.' };

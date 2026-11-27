@@ -88,6 +88,11 @@ const def = {
     light(2); await x.pixel('Le modèle relie les tables entre elles, et le langage DAX calcule les indicateurs.');
     light(3); await x.pixel('Les rapports permettent ensuite de visualiser et d’explorer les résultats.');
     light(4); await x.pixel('Enfin, Power BI Service sert à publier et partager le travail.');
+    await K.jeu(x, { app: 'jeu101', pairs: true, title: 'De la source au rapport', btn: 'Vérifier', todo: 'Relie chaque outil à son rôle.',
+      rows: [['pq', 'Power Query', 'pq', 'Power Query intervient au début : il importe et nettoie les fichiers.'], ['dax', 'Modèle et DAX', 'dax', 'Le modèle relie les tables, et DAX calcule les indicateurs.'], ['rap', 'Rapports', 'rap', 'Les rapports servent à visualiser et à explorer les résultats.'], ['svc', 'Power BI Service', 'svc', 'Power BI Service arrive en dernier : il publie et partage le travail.']],
+      options: [['rap', 'Visualiser et explorer'], ['svc', 'Publier et partager'], ['pq', 'Importer et nettoyer'], ['dax', 'Relier et calculer']] });
+    await x.ok('Importer, relier et calculer, visualiser, puis partager : c’est tout le parcours.');
+    x.app('lecon');
     $$('.flow-box', card).forEach(b => b.classList.remove('hot'));
     await x.pixel('Notre objectif n’est pas simplement de créer de beaux graphiques.');
     await x.pixel('Nous devons transformer les données en informations utiles pour prendre des décisions.');
@@ -126,7 +131,7 @@ const def = {
       await x.pixel('Regarde ce que les différents services nous ont envoyé.');
       await x.pixel('Certains travaillent avec Excel, d’autres utilisent des fichiers CSV ou des bases de données. Avant de commencer, identifions ces sources.');
       const B = K.matching({
-        title: 'Les sources de Wonderland', intro: 'Associe chaque source à son format.',
+        title: 'Les sources de Wonderland', intro: 'Relie chaque source à son format.',
         rows: [
           { id: 'xlsx', label: 'Billetterie.xlsx', sub: 'Envoyé par la billetterie' },
           { id: 'csv', label: 'Frequentation.csv', sub: 'Export des portiques d’entrée' },
@@ -138,7 +143,7 @@ const def = {
         options: [['excel', 'Excel'], ['csv', 'CSV'], ['sql', 'SQL Server'], ['pdf', 'PDF'], ['dir', 'Dossier'], ['web', 'Web']]
       });
       x.app('m1', B.el);
-      x.todo('Associe chaque source à son format, puis vérifie tes réponses.');
+      x.todo('Relie chaque source à son format, puis vérifie tes réponses.');
       const want = { xlsx: 'excel', csv: 'csv', db: 'sql', pdf: 'pdf', dir: 'dir', web: 'web' };
       await x.wait({
         'match.pick': () => { B.mark(); },
@@ -363,7 +368,7 @@ const def = {
     { async run(x) {
       await x.say('victoria', 'Avant de te confier les données de la billetterie, explique-moi comment tu comptes transformer nos fichiers en informations utiles.');
       const B = K.ordering({
-        title: 'Le processus d’analyse', intro: 'Touche les étapes dans l’ordre logique. Touche une étape placée pour la retirer.', btn: 'Valider le processus',
+        title: 'Le processus d’analyse', intro: 'Glisse chaque étape à sa place, de la première à la dernière.', btn: 'Valider le processus',
         items: [['report', 'Créer les rapports'], ['clean', 'Nettoyer les données'], ['publish', 'Publier et partager'], ['connect', 'Se connecter aux sources'], ['calc', 'Calculer les indicateurs'], ['model', 'Organiser le modèle']]
       });
       x.app('m8', B.el);

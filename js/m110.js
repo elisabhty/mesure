@@ -537,7 +537,7 @@ const def = {
       const board = (title, intro, rows, opts, btn) => K.matching({ title, intro, plain: true, placeholder: 'Choisir', btn, options: opts, rows: rows.map(r => ({ id: r[0], label: fr(r[1]) })) });
       const bc = board('Construis ta restitution', 'Pour chaque affirmation : démontrée par les données, ou non ?', STAT, [['oui', 'Démontrée'], ['non', 'Non démontrée']], 'Soumettre mes conclusions');
       x.app('conclusions', bc.el);
-      x.todo('Sélectionne uniquement les conclusions démontrées par les données.');
+      x.todo('Range chaque affirmation : démontrée, ou non démontrée.');
       const e0 = x.errors;
       await x.wait({ 'match.pick': () => {}, 'match.check': ({ values }) => {
         const miss = STAT.filter(r => !values[r[0]]); if (miss.length) return x.oops('', `Il reste ${miss.length === 1 ? 'une affirmation' : miss.length + ' affirmations'} à classer.`);
@@ -553,7 +553,7 @@ const def = {
       const REC = [['r1', 'Préparer l’accueil à partir des billets déjà vendus', 1], ['r2', 'Approfondir les performances commerciales du Web', 1], ['r3', 'Fermer Sky Tower dès la semaine prochaine', 0, 'Conclusion causale non démontrée'], ['r4', 'Examiner la capacité et les besoins de Dragon', 1], ['r5', 'Actualiser les registres des entrées et des passages', 1], ['r6', 'Augmenter les prix du Web, puisqu’il est le plus rentable', 0, 'Confusion entre montant TTC et bénéfice'], ['r7', 'Collecter les coûts et les données de satisfaction', 1]];
       const br = board('Tes recommandations', 'Lesquelles les données permettent-elles de proposer ?', REC, [['oui', 'À proposer'], ['non', 'À écarter']], 'Soumettre mes recommandations');
       x.app('recos', br.el);
-      x.todo('Choisis les recommandations compatibles avec les données disponibles.');
+      x.todo('Range chaque recommandation : à proposer, ou à écarter.');
       await x.wait({ 'match.pick': () => {}, 'match.check': ({ values }) => {
         const miss = REC.filter(r => !values[r[0]]); if (miss.length) return x.oops('', `Il reste ${miss.length === 1 ? 'une recommandation' : miss.length + ' recommandations'} à classer.`);
         const bad = REC.filter(r => (values[r[0]] === 'oui') !== !!r[2]);
