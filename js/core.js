@@ -36,6 +36,12 @@ function fit() {
 addEventListener('resize', fit); fit();
 const sbTime = () => { const d = new Date(); $('#sb-time').textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
 sbTime(); setInterval(sbTime, 15000);
+/* iOS n'applique :active qu'avec un écouteur touchstart */
+document.addEventListener('touchstart', () => {}, { passive: true });
+/* Annonces VoiceOver : une région polie, invisible */
+const srLive = document.body.appendChild(h('<div class="sr-only" role="status" aria-live="polite"></div>'));
+let srQ = [], srT = 0;
+function announce(msg) { srQ.push(msg); clearTimeout(srT); srT = setTimeout(() => { srLive.textContent = srQ.join(' ') + (srLive.textContent.endsWith('\u00A0') ? '' : '\u00A0'); srQ = []; }, 80); }
 
 /* ───────── Progression ───────── */
 const KEY = 'pbq-module1';
@@ -80,13 +86,34 @@ function projectNow() { const last = [...S.done].sort().pop(); return last ? pro
 /* ───────── Onglets ───────── */
 const views = { parc: $('#v-parc'), bureau: $('#v-bureau'), memo: $('#v-memo') };
 function showTab(t) {
-  $$('.tab').forEach(x => x.classList.toggle('is-on', x.dataset.tab === t));
+  $$('.tabs > .tab').forEach(x => { const on = x.dataset.tab === t; x.classList.toggle('is-on', on); if (on) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); });
   for (const k in views) { views[k].classList.toggle('is-on', k === t); views[k].inert = k !== t; }
   if (t === 'bureau') renderBureau(); if (t === 'memo') renderMemo();
 }
-$$('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+$$('.tabs > .tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
 /* Parc : une carte par module, empilées (le parcours monte du module 1 vers le module 2) */
+/* Étiquette à droite ou à gauche de sa pastille, du côté où elle ne touche ni pastille ni autre étiquette */
+function placeLabels(map) {
+  const hit = (a, b, m = 3) => a.left < b.right + m && a.right > b.left - m && a.top < b.bottom + m && a.bottom > b.top - m;
+  const pins = $$('.pin', map).map(p => p.getBoundingClientRect()), placed = [], mw = map.clientWidth;
+  for (const l of $$('.pin-label', map)) {
+    const x = parseFloat(l.parentElement.style.left) / 100 * mw;
+    let best = 'r', score = Infinity;
+    for (const side of x < mw / 2 ? ['r', 'l'] : ['l', 'r']) {
+      l.classList.remove('l', 'r'); l.classList.add(side);
+      /* Place disponible jusqu'au bord de la carte : le titre passe à la ligne plutôt que d'être coupé */
+      l.style.maxWidth = Math.max(80, side === 'r' ? mw - x - 44 : x - 44) + 'px';
+      const r = l.getBoundingClientRect(), sc = pins.filter(p => hit(r, p)).length * 2 + placed.filter(p => hit(r, p)).length;
+      if (sc < score) { score = sc; best = side; }
+      if (!sc) break;
+    }
+    l.classList.remove('l', 'r'); l.classList.add(best);
+    l.style.maxWidth = Math.max(80, best === 'r' ? mw - x - 44 : x - 44) + 'px';
+    placed.push(l.getBoundingClientRect());
+  }
+}
+if (window.ResizeObserver) { let lastW = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w && lastW && w !== lastW) $$('#maps .map').forEach(placeLabels); lastW = w || lastW; }).observe($('#maps')); }
 function renderPark(scrollToCurrent) {
   $('#xp-home').textContent = fr(S.xp + ' XP');
   const box = $('#maps'); box.innerHTML = '';
@@ -97,12 +124,11 @@ function renderPark(scrollToCurrent) {
     const map = h(`<div class="map ${open ? '' : 'shut'}" data-mod="${md.n}"><img src="img/${md.img}" alt="${esc(md.alt || '')}" width="640" height="1280"></div>`);
     for (const m of D.missions.filter(x => modOf(x.id) === md.n)) {
       const st = isDone(m.id) ? 'done' : (m.id === cur ? 'current' : (unlocked(m.id) ? 'open' : 'locked'));
-      const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}">${m.id}</button>`);
+      const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}, ${({ done: 'terminée', current: 'à faire', open: 'ouverte', locked: 'verrouillée' })[st]}">${m.id}<span class="pin-label ${st === 'locked' ? 'locked' : ''}" aria-hidden="true">${esc(fr(m.titre))}</span></button>`);
       b.addEventListener('click', () => openMissionSheet(m.id));
       map.appendChild(b);
-      map.appendChild(h(`<span class="pin-label ${st === 'locked' ? 'locked' : ''}" style="left:${m.pin[0]}%; top:${m.pin[1]}%">${esc(fr(m.titre))}</span>`));
     }
-    box.appendChild(map);
+    box.appendChild(map); placeLabels(map);
     if (md.n > 1) {
       const n = doneIn(md.n);
       box.appendChild(h(`<div class="mod-band ${open ? '' : 'shut'}"><small>Module ${md.n}</small><b>${esc(fr(md.titre))}</b><span>${esc(fr(!open ? `Termine la mission ${prevOf(md.n * 100 + 1)} pour ouvrir ce module.` : n === 10 ? `Module terminé · ${md.fin || ''}` : `${md.sous} · ${n}/10`))}</span></div>`));
@@ -189,18 +215,39 @@ function renderMemo() {
   el.appendChild(h('<div class="memo-end"></div>'));
 }
 function ficheEl(id, i, f) {
-  const c = h(`<button class="fiche" aria-label="Fiche ${i + 1}"><div class="fiche-in">
-    <div class="fiche-f"><small>Fiche ${i + 1}/8 · Mission ${id}</small><b>${esc(fr(f[0]))}</b><p>${esc(fr(f[1]))}</p><em>Toucher pour retourner</em></div>
-    <div class="fiche-b"><small>${esc(fr(f[0]))}</small><p>${esc(fr(f[2]))}</p></div></div></button>`);
-  c.addEventListener('click', () => c.classList.toggle('flip'));
+  const c = h(`<button class="fiche" aria-pressed="false"><div class="fiche-in">
+    <div class="fiche-f"><small>Fiche ${i + 1}/8 · Mission ${id}</small><b>${esc(fr(f[0]))}</b><p>${esc(fr(f[1]))}</p><em aria-hidden="true">Toucher pour retourner</em></div>
+    <div class="fiche-b" aria-hidden="true"><small>${esc(fr(f[0]))}</small><p>${esc(fr(f[2]))}</p></div></div></button>`);
+  c.addEventListener('click', () => {
+    const on = c.classList.toggle('flip');
+    c.setAttribute('aria-pressed', on); $('.fiche-f', c).setAttribute('aria-hidden', on); $('.fiche-b', c).setAttribute('aria-hidden', !on);
+    if (on) announce(fr(f[2]));
+  });
   return c;
 }
 
 /* ───────── Feuilles et notifications ───────── */
 const scrim = $('#scrim');
-let sheetOnClose = null;
-function openSheet(onClose) { $('#sheet').classList.add('on'); scrim.classList.add('on'); sheetOnClose = onClose || null; }
-function closeSheet() { $('#sheet').classList.remove('on'); scrim.classList.remove('on'); const f = sheetOnClose; sheetOnClose = null; if (f) f(); }
+let sheetOnClose = null, sheetFrom = null;
+function openSheet(onClose) {
+  const sh = $('#sheet'), t = $('h2', sh);
+  const x = h('<button class="sheet-x" type="button" aria-label="Fermer"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button>');
+  x.addEventListener('click', closeSheet); sh.prepend(x);
+  sh.setAttribute('aria-modal', 'true');
+  if (t) { t.id = 'sheet-t'; t.tabIndex = -1; sh.setAttribute('aria-labelledby', 'sheet-t'); } else sh.removeAttribute('aria-labelledby');
+  sheetFrom = document.activeElement;
+  for (const e of $$('.view, #tabbar')) if (!e.inert) { e.inert = true; e.dataset.sheetInert = '1'; }
+  sh.classList.add('on'); scrim.classList.add('on'); sheetOnClose = onClose || null;
+  requestAnimationFrame(() => (t || x).focus({ preventScroll: true }));
+}
+function closeSheet() {
+  $('#sheet').classList.remove('on'); scrim.classList.remove('on');
+  for (const e of $$('[data-sheet-inert]')) { e.inert = false; delete e.dataset.sheetInert; }
+  if (sheetFrom && sheetFrom.isConnected && !sheetFrom.closest('[inert]')) sheetFrom.focus({ preventScroll: true });
+  sheetFrom = null;
+  const f = sheetOnClose; sheetOnClose = null; if (f) f();
+}
+addEventListener('keydown', e => { if (e.key === 'Escape' && $('#sheet').classList.contains('on')) closeSheet(); });
 scrim.addEventListener('click', () => { if (!$('#sheet').dataset.modal) closeSheet(); });
 let toastT = 0;
 function toast(who, title, text) {
@@ -405,6 +452,7 @@ function setConsigne(text) {
   } else if (on) { morph(consigne, () => { consigneT.textContent = text; }); consigneT.classList.remove('swap'); }
   else { consigneT.textContent = text; consigneT.classList.remove('swap'); }
   consigne.classList.add('on');
+  if (consigne._said !== text) { consigne._said = text; announce(text); }
 }
 function endTodo() { curTodo = null; setConsigne(null); }
 /* Pendant le travail, la réplique s'efface et laisse la place au logiciel ; elle reste dans l'historique */
@@ -451,7 +499,7 @@ function shake(el) { if (!el) return; el.classList.remove('shake'); void el.offs
 /* Applications de l'espace de travail */
 const apps = {};
 function app(name, el) {
-  if (el && !apps[name]) { apps[name] = el; el.classList.add('app'); ws.appendChild(el); }
+  if (el && !apps[name]) { apps[name] = el; el.classList.add('app'); ws.appendChild(el); if (!window.PBQ_FAST) void el.offsetWidth; }
   for (const k in apps) { apps[k].classList.toggle('is-on', k === name); apps[k].inert = k !== name; }
   return apps[name];
 }
@@ -460,11 +508,18 @@ function resetApps() { for (const k in apps) { apps[k].remove(); delete apps[k];
 /* Panneau de réponse : dans la zone du bas, à la place de la consigne */
 function openAnswer(el) {
   setConsigne(null);
-  ansCard.innerHTML = ''; ansCard.appendChild(el); ansCard.scrollTop = 0;
+  /* Deux questions de suite : la carte reste ouverte et change de hauteur en douceur au lieu de sauter */
+  const open = answer.classList.contains('on') || performance.now() - (answer._shut || 0) < 50;
+  const swap = () => { ansCard.innerHTML = ''; ansCard.appendChild(el); ansCard.scrollTop = 0; };
+  if (open) morph(ansCard, swap); else swap();
   answer.classList.add('on');
   ws.classList.add('squeeze');
+  const q = $('.q', el) || $('.lbl', el);
+  if (q) { q.tabIndex = -1; requestAnimationFrame(() => { if (!answer.contains(document.activeElement)) q.focus({ preventScroll: true }); }); }
 }
 function closeAnswer() {
+  if (answer.contains(document.activeElement)) { thread.tabIndex = -1; thread.focus({ preventScroll: true }); }
+  if (answer.classList.contains('on')) answer._shut = performance.now();
   answer.classList.remove('on'); ws.classList.remove('squeeze');
   setTimeout(() => { if (curTodo && !answer.classList.contains('on')) setConsigne(fr(curTodo)); }, 0);
 }
@@ -501,8 +556,16 @@ if (document.fonts) document.fonts.ready.then(() => fitTitle());
 if (window.ResizeObserver) { let lastW = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w && w !== lastW) { lastW = w; fitTitle(); } }).observe($('.w-title')); }
 /* XP et étapes */
 function setXP(v, plus) {
-  const x = $('#w-xp'); $('#w-xp-n').textContent = fr(v + ' XP');
-  if (plus) { const f = h(`<span class="xp-float">+${plus}</span>`); x.appendChild(f); setTimeout(() => f.remove(), 1400); }
+  const x = $('#w-xp'), n = $('#w-xp-n'); cancelAnimationFrame(x._raf);
+  n.textContent = fr(v + ' XP');
+  if (!plus) return;
+  const f = h(`<span class="xp-float">+${plus}</span>`); x.appendChild(f); setTimeout(() => f.remove(), 1400);
+  if (reduced || window.PBQ_FAST) return;
+  /* Le compteur roule de l'ancien au nouveau total pendant que « +N » s'envole, et la pastille réagit */
+  x.classList.remove('gain'); void x.offsetWidth; x.classList.add('gain');
+  const t0 = performance.now(), from = v - plus;
+  const tick = now => { const p = Math.min(1, (now - t0) / 700), e = 1 - Math.pow(1 - p, 3); n.textContent = fr(Math.round(from + plus * e) + ' XP'); if (p < 1) x._raf = requestAnimationFrame(tick); };
+  tick(t0);
 }
 function setSteps(i, lesson) {
   const ol = $('#w-steps'); ol.innerHTML = ''; ol.classList.toggle('lesson', !!lesson);
@@ -552,8 +615,8 @@ function makeCtx(m, t, exIndex, pbi) {
         const sel = new Set();
         const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="mchips"></div><button class="cta dark">${esc(btnLabel || 'Valider')}</button></div>`);
         options.forEach(o => {
-          const b = h(`<button class="mchip" data-v="${esc(String(o.v))}">${esc(fr(o.t))}</button>`);
-          b.addEventListener('click', () => { sel.has(o.v) ? sel.delete(o.v) : sel.add(o.v); b.classList.toggle('on', sel.has(o.v)); });
+          const b = h(`<button class="mchip" data-v="${esc(String(o.v))}" aria-pressed="false">${esc(fr(o.t))}</button>`);
+          b.addEventListener('click', () => { sel.has(o.v) ? sel.delete(o.v) : sel.add(o.v); b.classList.toggle('on', sel.has(o.v)); b.setAttribute('aria-pressed', sel.has(o.v)); });
           $('.mchips', el).appendChild(b);
         });
         if (options.some(o => String(o.t).length > 26)) $('.mchips', el).classList.add('long');
@@ -604,8 +667,8 @@ function makeCtx(m, t, exIndex, pbi) {
           b.addEventListener('click', () => {
             if (t !== run || el.dataset.done) return;
             /* Bonne réponse : la carte passe au vert, puis la question se referme */
-            if (o.ok) { el.dataset.done = '1'; b.classList.add('yes'); $$('.choice', el).forEach(c => { if (c !== b) c.classList.add('fade'); }); setTimeout(() => { if (t !== run) return; closeAnswer(); resolve(o); }, window.PBQ_FAST ? 30 : 620); return; }
-            ctx.oops(o.err || '', o.msg); b.classList.add('no'); shake(b);
+            if (o.ok) { el.dataset.done = '1'; b.classList.add('yes'); announce('Bonne réponse.'); $$('.choice', el).forEach(c => { if (c !== b) c.classList.add('fade'); }); setTimeout(() => { if (t !== run) return; closeAnswer(); resolve(o); }, window.PBQ_FAST ? 30 : 620); return; }
+            ctx.oops(o.err || '', o.msg); b.classList.add('no'); b.setAttribute('aria-label', fr(o.t) + ' : réponse fausse'); shake(b);
           });
           $('.choices', el).appendChild(b);
         });
@@ -769,6 +832,8 @@ async function showRewards(def, t) {
   zone.appendChild(btn(def.bilan ? 'Voir mon bilan' : 'Voir mes nouvelles fiches', 'cta', () => def.bilan ? showBilan(def, t) : showFiches(def, t)));
   el.appendChild(zone);
   showLayer('reward');
+  /* Le gain d'XP se compte au moment où sa case apparaît */
+  if (!reduced && !window.PBQ_FAST) { const b = $('.rw-stats b', el), t0 = performance.now() + 520; const tick = now => { const p = Math.max(0, Math.min(1, (now - t0) / 650)); b.textContent = '+' + Math.round(xpM * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tick); }; tick(performance.now()); }
 }
 /* Bilan individuel de l'épreuve finale (mission 110) */
 function showBilan(def, t) {
@@ -799,7 +864,7 @@ async function showSuite(def, t) {
   const pill = s => `<span>${s}</span>`;
   if (nx) {
     const newMod = modOf(nx.id) !== modOf(def.id), md = (D.modules || []).find(x => x.n === modOf(nx.id));
-    el.appendChild(h(`<div style="display:contents"><div class="sheet-img" style="margin:0 -22px; border-radius:0; height:240px"><img src="img/s-${nx.scene}.webp" alt=""></div>
+    el.appendChild(h(`<div style="display:contents"><div class="sheet-img" style="margin:calc(-10px - var(--sat)) -22px 0; border-radius:0; height:240px"><img src="img/s-${nx.scene}.webp" alt=""></div>
       ${newMod && md ? `<p class="rw-next mod">${esc(fr(`Nouveau lieu débloqué · Module ${md.n} · ${md.titre}`))}</p>` : ''}
       <p class="rw-next">Prochaine mission · ${nx.id}</p>
       <h1 style="text-align:left; margin-top:4px">${esc(fr(nx.titre))}</h1><p style="text-align:left">${esc(fr((M[nx.id] && M[nx.id].accroche) || nx.lieu))}</p>
@@ -840,7 +905,7 @@ function start() {
 }
 
 window.PBQ = {
-  start, mission, M, S, D, fr, esc, h, eur, nfmt, dfr, norm, clone, $, $$, sleep: (ms) => sleep(ms, run), act, avatar, person, clip: '', prevOf, nextOf, modOf, xpOf, renderPark,
+  start, announce, mission, M, S, D, fr, esc, h, eur, nfmt, dfr, norm, clone, $, $$, sleep: (ms) => sleep(ms, run), act, avatar, person, clip: '', prevOf, nextOf, modOf, xpOf, renderPark,
   target, untarget, shake, hurry, toast, bubble, controle, projectBefore, project0, runMission, closeMission, store,
   get run() { return run; }, get X() { return X; }, get active() { return active; },
   reset() { localStorage.removeItem(KEY); location.reload(); }

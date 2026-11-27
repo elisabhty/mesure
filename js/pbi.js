@@ -230,11 +230,23 @@ class PBI {
   mark(...sels) {
     $$('.is-target', this.el).forEach(e => e.classList.remove('is-target'));
     this.marks = sels.flat().filter(Boolean);
-    this._scrollMark = this._scrollGrid = this.marks.length > 0;
+    this._scrollMark = this._scrollGrid = this._zoomMark = this.marks.length > 0;
     this.applyMarks();
   }
   applyMarks() {
     for (const s of this.marks) $$(s, this.el).forEach(e => e.classList.add('is-target'));
+    /* Canevas : une cible guidée trop petite pour le doigt (< 24 px) fait passer la page à 200 % et la centre */
+    const z = this._zoomMark && $('.canvas .is-target', this.el);
+    if (z && this.st.view === 'report') {
+      this._zoomMark = false;
+      const r = z.getBoundingClientRect();
+      if (Math.min(r.width, r.height) < 24 && (this.st.zoom || 1) === 1) {
+        this.st.zoom = 2; this.render();
+        const t2 = $('.canvas .is-target', this.el), cv = $('.canvas', this.el);
+        if (t2 && cv) requestAnimationFrame(() => { const a = cv.getBoundingClientRect(), b = t2.getBoundingClientRect(); cv.scrollLeft += b.left - a.left - (a.width - b.width) / 2; cv.scrollTop += b.top - a.top - (a.height - b.height) / 2; });
+        return;
+      }
+    }
     /* Une cible cachée dans le volet défile jusqu'à devenir visible, une seule fois par guide */
     const t = this._scrollMark && $('.pane-body .is-target', this.el);
     if (t) {

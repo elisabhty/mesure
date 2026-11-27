@@ -95,6 +95,8 @@ P_.openQ2 = function (opts = {}) {
   this.q2.cur = want ? want.id : (this.P.queries.find(q => q.m2) || this.P.queries[0] || {}).id || null;
   const el = h(`<div class="pq2" role="dialog" aria-label="Éditeur Power Query"></div>`);
   this.q2El = el; this.el.appendChild(el);
+  /* Le rapport recouvert par l'éditeur n'est plus parcouru par VoiceOver */
+  for (const c of this.el.children) if (c !== el && !c.inert) { c.inert = true; c.dataset.q2Inert = '1'; }
   el.addEventListener('click', e => this.q2Click(e));
   el.addEventListener('keydown', e => { const i = e.target.closest('[data-enter]'); if (i && e.key === 'Enter') { e.preventDefault(); this.q2Enter(i); } });
   this.q2render();
@@ -105,6 +107,7 @@ P_.closeQ2 = function (now) {
   if (!this.q2El) return;
   const q2 = this.q2; this.q2keep = { fx: q2.fx, quality: q2.quality, dist: q2.dist, prof: q2.prof, ws: q2.ws, scope: q2.scope };
   const el = this.q2El; this.q2El = null; this.q2Menu && this.q2Menu.remove(); this.q2Menu = null;
+  for (const c of this.el.querySelectorAll(':scope > [data-q2-inert]')) { c.inert = false; delete c.dataset.q2Inert; }
   if (now) el.remove(); else { el.classList.remove('on'); setTimeout(() => el.remove(), 330); }
 };
 P_.q2q = function () { const eng = this.engine(); return eng.q(this.q2.cur) || null; };

@@ -10,7 +10,7 @@
 <meta name="description" content="Power BI Quest : 60 jours pour sauver un parc d'attractions grâce à la data. Apprends Power BI en immersion, mission après mission.">
 <link rel="preload" href="img/carte.webp" as="image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141B3C'/%3E%3Cpath d='M9 23v-6M14 23v-10M19 23v-14M24 23v-8' stroke='%23F2C811' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=20261127">
+<link rel="stylesheet" href="css/app.css?v=20261127b">
 </head>
 <body>
 <div class="stage">
@@ -53,7 +53,7 @@
 
     <nav class="tabbar" id="tabbar" aria-label="Navigation">
       <div class="tabs">
-        <button class="tab is-on" data-tab="parc"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M2.5 5.5l5-2 5 2 5-2v11l-5 2-5-2-5 2z"/><path d="M7.5 3.5v11M12.5 5.5v11"/></svg>Parc</button>
+        <button class="tab is-on" data-tab="parc" aria-current="page"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M2.5 5.5l5-2 5 2 5-2v11l-5 2-5-2-5 2z"/><path d="M7.5 3.5v11M12.5 5.5v11"/></svg>Parc</button>
         <button class="tab" data-tab="bureau"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="4" width="14" height="9" rx="1.5"/><path d="M7.5 16.5h5M10 13v3.5"/></svg>Bureau</button>
         <button class="tab" data-tab="memo"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7.3 7.5h5.4M7.3 10.5h5.4M7.3 13.5h3" stroke-linecap="round"/></svg>Mémo</button>
       </div>
@@ -64,7 +64,7 @@
       <div class="layer cine" id="cine">
         <div class="cine-bg" id="cine-bg"></div>
         <div class="cine-top"><div class="cine-title" id="cine-title"></div><button class="cine-skip" id="cine-skip">Passer</button></div>
-        <div class="cine-stack" id="cine-stack"></div>
+        <div class="cine-stack" id="cine-stack" aria-live="polite"></div>
       </div>
 
       <div class="layer work" id="work">
@@ -72,9 +72,9 @@
           <button class="w-quit" id="w-quit" aria-label="Quitter la mission"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l10 10M14 4L4 14"/></svg></button>
           <div class="w-title"><small id="w-kicker"></small><b id="w-name"></b></div>
           <button class="w-hint" id="w-hint" aria-label="Obtenir un indice"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.4 14.5h5.2M8 17h4M10 2.8a5.2 5.2 0 00-3 9.4c.5.4.8 1 .8 1.6v.7h4.4v-.7c0-.6.3-1.2.8-1.6a5.2 5.2 0 00-3-9.4z"/></svg><span id="w-hint-n">3</span></button>
-          <div class="w-xp" id="w-xp"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="currentColor"/></svg><span id="w-xp-n">0 XP</span></div>
+          <div class="w-xp" id="w-xp"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.2 1L3 9h4.2L6.6 15 13 7H8.8z"/></svg><span id="w-xp-n">0 XP</span></div>
         </header>
-        <ol class="w-steps" id="w-steps"></ol>
+        <ol class="w-steps" id="w-steps" aria-hidden="true"></ol>
         <div class="ws" id="ws"></div>
         <div class="dock" id="dock">
           <button class="dock-grab" id="dock-grab" type="button" aria-label="Revoir la conversation"><i></i></button>
@@ -89,48 +89,48 @@
 
     <div class="scrim" id="scrim"></div>
     <div class="sheet" id="sheet" role="dialog"></div>
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status"></div>
 
    </div>
   </div>
  </div>
 </div>
-<script src="js/textes.js?v=20261127"></script>
-<script src="js/textes2.js?v=20261127"></script>
-<script src="js/data.js?v=20261127"></script>
-<script src="js/data2.js?v=20261127"></script>
-<script src="js/core.js?v=20261127"></script>
-<script src="js/jeux.js?v=20261127"></script>
-<script src="js/pbi.js?v=20261127"></script>
-<script src="js/viz.js?v=20261127"></script>
-<script src="js/filtres.js?v=20261127"></script>
-<script src="js/layout.js?v=20261127"></script>
-<script src="js/pqengine.js?v=20261127"></script>
-<script src="js/pq2.js?v=20261127"></script>
-<script src="js/pq2b.js?v=20261127"></script>
-<script src="js/pq2c.js?v=20261127"></script>
-<script src="js/kit.js?v=20261127"></script>
-<script src="js/kit2.js?v=20261127"></script>
-<script src="js/m101.js?v=20261127"></script>
-<script src="js/m102.js?v=20261127"></script>
-<script src="js/m103.js?v=20261127"></script>
-<script src="js/m104.js?v=20261127"></script>
-<script src="js/m105.js?v=20261127"></script>
-<script src="js/m106.js?v=20261127"></script>
-<script src="js/m107.js?v=20261127"></script>
-<script src="js/m108.js?v=20261127"></script>
-<script src="js/m109.js?v=20261127"></script>
-<script src="js/m110.js?v=20261127"></script>
-<script src="js/m201.js?v=20261127"></script>
-<script src="js/m202.js?v=20261127"></script>
-<script src="js/m203.js?v=20261127"></script>
-<script src="js/m204.js?v=20261127"></script>
-<script src="js/m205.js?v=20261127"></script>
-<script src="js/m206.js?v=20261127"></script>
-<script src="js/m207.js?v=20261127"></script>
-<script src="js/m208.js?v=20261127"></script>
-<script src="js/m209.js?v=20261127"></script>
-<script src="js/m210.js?v=20261127"></script>
+<script src="js/textes.js?v=20261127b"></script>
+<script src="js/textes2.js?v=20261127b"></script>
+<script src="js/data.js?v=20261127b"></script>
+<script src="js/data2.js?v=20261127b"></script>
+<script src="js/core.js?v=20261127b"></script>
+<script src="js/jeux.js?v=20261127b"></script>
+<script src="js/pbi.js?v=20261127b"></script>
+<script src="js/viz.js?v=20261127b"></script>
+<script src="js/filtres.js?v=20261127b"></script>
+<script src="js/layout.js?v=20261127b"></script>
+<script src="js/pqengine.js?v=20261127b"></script>
+<script src="js/pq2.js?v=20261127b"></script>
+<script src="js/pq2b.js?v=20261127b"></script>
+<script src="js/pq2c.js?v=20261127b"></script>
+<script src="js/kit.js?v=20261127b"></script>
+<script src="js/kit2.js?v=20261127b"></script>
+<script src="js/m101.js?v=20261127b"></script>
+<script src="js/m102.js?v=20261127b"></script>
+<script src="js/m103.js?v=20261127b"></script>
+<script src="js/m104.js?v=20261127b"></script>
+<script src="js/m105.js?v=20261127b"></script>
+<script src="js/m106.js?v=20261127b"></script>
+<script src="js/m107.js?v=20261127b"></script>
+<script src="js/m108.js?v=20261127b"></script>
+<script src="js/m109.js?v=20261127b"></script>
+<script src="js/m110.js?v=20261127b"></script>
+<script src="js/m201.js?v=20261127b"></script>
+<script src="js/m202.js?v=20261127b"></script>
+<script src="js/m203.js?v=20261127b"></script>
+<script src="js/m204.js?v=20261127b"></script>
+<script src="js/m205.js?v=20261127b"></script>
+<script src="js/m206.js?v=20261127b"></script>
+<script src="js/m207.js?v=20261127b"></script>
+<script src="js/m208.js?v=20261127b"></script>
+<script src="js/m209.js?v=20261127b"></script>
+<script src="js/m210.js?v=20261127b"></script>
 <script>PBQ.start();</script>
 </body>
 </html>
