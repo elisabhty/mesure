@@ -140,8 +140,9 @@ function renderPark(scrollToCurrent) {
     }
     for (const m of ms) {
       const st = isDone(m.id) ? 'done' : (m.id === cur ? 'current' : (unlocked(m.id) ? 'open' : 'locked'));
-      const k = attrOf(m.id), ic = st === 'done' && k && window.J ? `<i class="pin-at">${window.J.icon(k)}</i>` : '';
-      const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}, ${({ done: 'terminée', current: 'à faire', open: 'ouverte', locked: 'verrouillée' })[st]}">${m.id}<span class="pin-label ${st === 'locked' ? 'locked' : ''}" aria-hidden="true">${ic}${esc(fr(m.titre))}</span></button>`);
+      /* Mission réussie : la pastille porte l'icône de son attraction rallumée */
+      const k = attrOf(m.id), ic = st === 'done' && k && window.J ? `<i class="pin-at" aria-hidden="true">${window.J.icon(k)}</i>` : '';
+      const b = h(`<button class="pin ${st}${ic ? ' attr' : ''}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}, ${({ done: 'terminée', current: 'à faire', open: 'ouverte', locked: 'verrouillée' })[st]}${ic ? ', attraction ' + esc(fr(window.J.name(k))) + ' rallumée' : ''}">${m.id}${ic}<span class="pin-label ${st === 'locked' ? 'locked' : ''}" aria-hidden="true">${esc(fr(m.titre))}</span></button>`);
       b.addEventListener('click', () => openMissionSheet(m.id));
       map.appendChild(b);
     }
