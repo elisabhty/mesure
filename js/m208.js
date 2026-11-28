@@ -60,7 +60,7 @@ const def = {
     await x.pixel('Aujourd’hui, nous empilons les événements mensuels. Nous ne cherchons pas de correspondance entre deux tables.');
     await x.say('gabriel', 'Les colonnes doivent donc décrire les mêmes informations.');
     await x.pixel('Oui. Et les noms doivent être harmonisés avant l’ajout. À toi : que produit chaque situation ?');
-    const B = K2.sorter({ bare: true, title: 'Après l’ajout de janvier et février…', btn: 'Vérifier', options: [['ok', 'Aligné'], ['split', 'Deux colonnes'], ['null', 'Nulls ailleurs']],
+    const B = K2.sorter({ key: () => SOL, bare: true, title: 'Après l’ajout de janvier et février…', btn: 'Vérifier', options: [['ok', 'Aligné'], ['split', 'Deux colonnes'], ['null', 'Nulls ailleurs']],
       rows: [['a', 'Février a les mêmes colonnes, dans un autre ordre', 'Mêmes noms'], ['b', 'Février nomme son coût CoutHT', 'Janvier : Cout_HT'], ['c', 'Février a une colonne Note_Export en plus', 'Janvier n’en a pas']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
     const sec = $('[data-sec="2"]', card); sec.appendChild(B.el); sec.style.display = '';
     requestAnimationFrame(() => sc.scrollTo({ top: Math.max(0, sec.offsetTop - 14), behavior: 'smooth' }));

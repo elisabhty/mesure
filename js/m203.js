@@ -219,7 +219,7 @@ const def = {
       });
       const t = tmp(); t.tmp203 = true;
       const N = K2.T(x, t.name).rows.length;
-      const B = K2.sorter({ title: 'Qui peut résoudre chaque dossier ?', intro: `${N} dossiers incomplets. Choisis le responsable de chaque vérification.`, btn: 'Valider la liste',
+      const B = K2.sorter({ key: () => SOL, title: 'Qui peut résoudre chaque dossier ?', intro: `${N} dossiers incomplets. Choisis le responsable de chaque vérification.`, btn: 'Valider la liste',
         options: [['oscar', 'Oscar · bon d’intervention'], ['gabriel', 'Gabriel · pièce de coût']],
         rows: [['M0012', 'Technicien absent'], ['M0400', 'Technicien fait d’espaces'], ['M1090', 'Technicien absent'], ['M0350', 'Attraction absente'], ['M0025', 'Coût HT absent'], ['M0450', 'Marqueur N/A'], ['M1050', 'Coût à confirmer']].map(r => ({ id: r[0], t: r[0], sub: r[1] })) });
       x.app('liste203', B.el);

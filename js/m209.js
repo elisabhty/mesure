@@ -79,7 +79,7 @@ const def = {
     const sc = card.firstElementChild;
     await x.pixel('À gauche, les interventions. À droite, le référentiel. Le choix de la jointure dépend de ce qu’on veut garder.');
     await x.pixel('Pour enrichir notre registre sans perdre d’événement, nous partirons d’une jointure externe gauche. À toi d’associer chaque besoin à sa jointure.');
-    const B = K2.sorter({ bare: true, title: 'Quelle jointure pour ce besoin ?', btn: 'Vérifier', options: [['lo', 'Externe gauche'], ['in', 'Interne'], ['la', 'Anti gauche'], ['fo', 'Externe complète']],
+    const B = K2.sorter({ key: () => SOL, bare: true, title: 'Quelle jointure pour ce besoin ?', btn: 'Vérifier', options: [['lo', 'Externe gauche'], ['in', 'Interne'], ['la', 'Anti gauche'], ['fo', 'Externe complète']],
       rows: [['a', 'Garder les huit interventions et ajouter leur description', 'Même sans correspondance'], ['b', 'Ne garder que les interventions décrites', 'Les autres disparaissent'], ['c', 'Lister les interventions qui ne trouvent rien', 'Codes à vérifier'], ['d', 'Voir aussi les équipements sans intervention', 'Les deux côtés']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
     const sec = $('[data-sec="2"]', card); sec.appendChild(B.el); sec.style.display = '';
     requestAnimationFrame(() => sc.scrollTo({ top: Math.max(0, sec.offsetTop - 14), behavior: 'smooth' }));
@@ -203,7 +203,7 @@ const def = {
       await K2.num(x, 'Lis le regroupement.', [{ id: 'k', label: 'Clés distinctes' }, { id: 'n', label: 'Lignes pour EQ04' }], v => v.k === 5 && v.n === 2 ? true : v.k === 6 ? ['', 'Une ligne par clé : lis la barre d’état du regroupement.'] : ['', 'Lis la barre d’état et la ligne EQ04.']);
       await x.pixel('Compare les deux lignes EQ04 dans le référentiel.');
       await K2.work(x, { cur: R, next: () => K2.shown(x, R) ? true : K2.showTodo(x, R), tries: cleTries(R) });
-      const B = K2.sorter({ title: 'Quatre situations', intro: 'Ce que montrent les clés, avant toute fusion.', btn: 'Vérifier', options: [['evt', 'Plusieurs événements'], ['conc', 'Descriptions concurrentes'], ['abs', 'Clé absente'], ['inc', 'Code à vérifier']],
+      const B = K2.sorter({ key: () => SOL, title: 'Quatre situations', intro: 'Ce que montrent les clés, avant toute fusion.', btn: 'Vérifier', options: [['evt', 'Plusieurs événements'], ['conc', 'Descriptions concurrentes'], ['abs', 'Clé absente'], ['inc', 'Code à vérifier']],
         rows: [['a', 'EQ01 deux fois', 'Interventions J001 et J005'], ['b', 'EQ04 deux fois', 'Référentiel : Malik, puis Lina'], ['c', 'J008', 'Code_Equipement vide'], ['d', 'J007', 'Code EQ99']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
       x.app('cles209', B.el);
       const SOL = { a: 'evt', b: 'conc', c: 'abs', d: 'inc' };

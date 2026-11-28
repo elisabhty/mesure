@@ -1254,8 +1254,6 @@ pre.q2-code{white-space:pre; overflow:auto; background:#FAF9F8; border-color:var
 
 /* ═════════ Mini-jeux ═════════ */
 .j-help, .board > .j-help{font-size:12.5px; line-height:1.35; color:var(--encre-3); text-align:center; margin:0 0 10px}
-.j-pairs > .j-help{text-align:left; color:var(--gris); font-size:13px}
-.j-pairs > p:not(.j-help) + .j-help{margin-top:-8px}
 /* Tri : la pile de cartes */
 .j-stage{position:relative; margin:2px 0 8px; min-height:calc(var(--jh, 96px) + 14px)}
 .j-pile{position:relative; padding-bottom:14px}
@@ -1308,42 +1306,6 @@ pre.q2-code{white-space:pre; overflow:auto; background:#FAF9F8; border-color:var
 .j-chip.ok{background:#EEF9F4; box-shadow:0 0 0 .5px rgba(63,181,146,.35)}
 .j-chip.bad{background:#FFF1F0; box-shadow:inset 0 0 0 1.5px var(--alerte); animation:shake .36s ease}
 .j-locked .j-card, .j-locked .j-chip{cursor:default}
-/* Ordre : des cartes à glisser */
-.j-ord{display:grid; gap:6px; margin:2px 0 14px}
-.j-oi{position:relative; display:grid; grid-template-columns:28px minmax(0,1fr) 44px; align-items:center; gap:10px; width:100%; min-height:50px; padding:9px 0 9px 10px; border-radius:16px; background:#fff; text-align:left; font-size:14.5px; font-weight:500; line-height:1.3; color:var(--encre); box-shadow:0 0 0 .5px rgba(20,27,60,.08), 0 2px 8px rgba(20,27,60,.06); touch-action:none; cursor:grab; transition:transform .32s var(--ease), box-shadow .2s, background-color .2s}
-.j-oi .j-n{font-style:normal; width:28px; height:28px; border-radius:50%; background:var(--craie); display:grid; place-items:center; font-size:13px; font-weight:700; color:var(--encre-2); font-variant-numeric:tabular-nums; transition:background-color .25s, color .25s}
-.j-oi .j-ot{overflow-wrap:break-word}
-.j-oi .j-hd{color:#B0B5C8; position:relative; align-self:stretch; display:grid; place-items:center; margin:-9px 0; cursor:grab} .j-oi .j-hd svg{width:18px; height:18px}
-.j-oi.shift{transition:transform .22s var(--ease)}
-.j-oi.drag{z-index:5; cursor:grabbing; transition:box-shadow .2s; box-shadow:0 0 0 .5px rgba(20,27,60,.08), 0 18px 40px rgba(20,27,60,.22)}
-.j-oi.sel{z-index:4; box-shadow:inset 0 0 0 2px var(--encre), 0 8px 20px rgba(20,27,60,.12); transform:scale(1.015)}
-.j-oi.sel .j-n{background:var(--encre); color:#fff}
-.j-oi.bad{box-shadow:inset 0 0 0 1.5px var(--alerte), 0 2px 8px rgba(20,27,60,.06)}
-.j-oi.bad .j-n{background:var(--alerte); color:#fff}
-.j-locked .j-oi{cursor:default}
-.j-locked .j-oi .j-n{background:var(--menthe); color:#fff; transition:background-color .25s calc(var(--i, 0) * 60ms), color .25s calc(var(--i, 0) * 60ms)}
-.j-locked .j-oi .j-hd{opacity:0}
-/* Paires : deux colonnes et des fils */
-.j-pp{position:relative; display:grid; grid-template-columns:minmax(0,1.2fr) 40px minmax(0,1fr); align-items:start; margin:2px 0 14px}
-.j-col{position:relative; z-index:1; display:grid; gap:6px}
-.j-col.l{grid-column:1} .j-col.r{grid-column:3}
-.j-lines{position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:2}
-.j-lines path{fill:none; stroke-width:2.5; stroke-linecap:round}
-.j-lines path.bad{stroke-dasharray:5 5}
-.j-lines path.tmp{stroke-dasharray:2 6; opacity:.8}
-.j-p{position:relative; display:flex; align-items:center; width:100%; min-height:46px; padding:8px 13px; border-radius:16px; background:#fff; text-align:left; font-size:13.5px; font-weight:500; line-height:1.25; color:var(--encre); box-shadow:0 0 0 .5px rgba(20,27,60,.08), 0 2px 8px rgba(20,27,60,.06); touch-action:none; transition:box-shadow .2s, transform .25s var(--spring), background-color .2s}
-.j-p .j-pt{min-width:0; overflow-wrap:anywhere}
-.j-p b{font-weight:600}
-.j-p small{display:block; font-size:11.5px; color:var(--gris); font-weight:400; margin-top:1px; overflow-wrap:break-word}
-.j-p .j-dot{position:absolute; top:50%; width:14px; height:14px; margin-top:-7px; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 2px #C4C9D9, 0 1px 3px rgba(20,27,60,.12); transition:background-color .2s, box-shadow .2s}
-.j-col.l .j-dot{right:-7px} .j-col.r .j-dot{left:-7px}
-.j-p.on .j-dot{background:var(--c); box-shadow:0 0 0 2.5px #fff, 0 1px 3px rgba(20,27,60,.2)}
-.j-p.sel, .j-p.over{box-shadow:inset 0 0 0 2px var(--encre), 0 8px 20px rgba(20,27,60,.12); transform:scale(1.025)}
-.j-p.over{background:var(--or-3)}
-.j-p.bad{background:#FFF1F0}
-.j-p.ok{background:#EEF9F4}
-.j-p.pop{animation:jgot .42s var(--spring)}
-.j-locked .j-p{cursor:default}
 /* Jeu réussi : le bouton devient une confirmation */
 .j-locked .j-go.cta.dark{background:#E4F6EE; color:#0B5A42; box-shadow:inset 0 0 0 1.5px rgba(63,181,146,.55); opacity:1; animation:jyes .5s var(--spring)}
 .j-locked .j-go.cta.dark::before{content:""; width:20px; height:20px; margin-right:8px; border-radius:50%; background:var(--menthe) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.3l2.6 2.6L11 4.3' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
@@ -1371,8 +1333,6 @@ pre.q2-code{white-space:pre; overflow:auto; background:#FAF9F8; border-color:var
 .j-help{transition:opacity .2s ease}
 @keyframes jgot{0%{box-shadow:inset 0 0 0 2px var(--or)} 40%{transform:scale(1.04)}}
 /* P1-4 Plateau qui défile : au doigt, la rangée laisse défiler, la poignée déplace */
-.j-scrolls .j-oi, .j-scrolls .j-p{touch-action:pan-y}
-.j-scrolls .j-oi .j-hd{touch-action:none}
 /* P2-9 Réussite : les cartes passent au vert l'une après l'autre */
 .j-locked .j-chip.ok{animation:jok .42s var(--spring) both; animation-delay:calc(var(--i, 0) * 45ms)}
 @keyframes jok{0%{background:#fff} 45%{transform:scale(1.04)}}
@@ -1447,3 +1407,194 @@ html, body{overscroll-behavior:none}
   .dock-grab i{background:rgba(20,27,60,.55)}
 }
 
+
+/* ═════════ Attractions du parc ═════════ */
+/* En-tête : le nom de l'attraction et une rangée d'ampoules qui s'allument à chaque bonne réponse */
+.j-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 9px}
+.j-attr{display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px 0 8px; border-radius:99px; background:var(--or-3); color:var(--or-t); font-size:12.5px; font-weight:650; letter-spacing:-.005em; white-space:nowrap; box-shadow:inset 0 0 0 .5px rgba(180,138,0,.28)}
+.j-attr svg{width:18px; height:18px; flex:none}
+.j-prog{display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; min-width:0}
+.j-prog i{width:8px; height:8px; border-radius:50%; background:rgba(20,27,60,.1); transition:background-color .25s, box-shadow .25s}
+.j-prog i.on{background:var(--or); box-shadow:0 0 0 2px rgba(242,200,17,.22), 0 0 6px rgba(242,200,17,.55)}
+.j-prog i.pop{animation:jdot .45s var(--spring)}
+@keyframes jdot{40%{transform:scale(1.7)}}
+.j-tri.bare > .j-head, .lesson-card .j-head{margin-top:2px}
+/* Fin de l'attraction : une phrase, pas de bouton */
+.keyed .j-done p{display:inline-flex; align-self:center; align-items:center; gap:7px; padding:7px 14px 8px 10px; border-radius:99px; background:#E4F6EE; color:#0B5A42; font-weight:600}
+.keyed .j-done p::before{content:""; width:18px; height:18px; border-radius:50%; flex:none; background:var(--menthe) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.3l2.6 2.6L11 4.3' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/11px no-repeat}
+.j-locked.keyed .j-done p{visibility:visible}
+.j-card.nope, .j-lift.nope{box-shadow:inset 0 0 0 2px var(--alerte), 0 10px 26px rgba(229,72,77,.18)}
+.j-zone.no{background:#FFF1F0; box-shadow:inset 0 0 0 2px var(--alerte)}
+.j-card .j-ic{width:22px; height:22px; flex:none; margin-bottom:2px}
+
+/* Étincelles et combo */
+.fx{position:absolute; z-index:70; width:0; height:0; pointer-events:none}
+.fx i{position:absolute; left:0; top:0; border-radius:50%; background:radial-gradient(circle at 35% 35%, #FFF8CF, #F2C811 62%, #D9A900); box-shadow:0 0 6px rgba(242,200,17,.55)}
+.fx i.st{border-radius:0; background:#FFE046; box-shadow:none; clip-path:polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%)}
+.fx-combo{position:absolute; z-index:71; translate:-50% -50%; display:flex; align-items:center; gap:5px; height:30px; padding:0 13px 0 10px; border-radius:99px; background:linear-gradient(165deg, #FFEA70, #F2C811); color:var(--encre); font-size:13.5px; font-weight:750; letter-spacing:-.01em; white-space:nowrap; box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 6px 18px rgba(214,170,0,.4); pointer-events:none; animation:combo 1.3s var(--ease) forwards}
+.fx-combo svg{width:11px; height:15px}
+@keyframes combo{0%{opacity:0; transform:translateY(8px) scale(.6)} 16%{opacity:1; transform:translateY(0) scale(1.1)} 28%{transform:scale(1)} 74%{opacity:1; transform:translateY(-14px)} 100%{opacity:0; transform:translateY(-24px) scale(.96)}}
+
+/* Montagnes russes : le wagon arrive à l'aiguillage, deux voies mènent aux deux gares */
+.j-card.wagon{padding-bottom:18px; box-shadow:inset 0 -6px 0 var(--or), 0 0 0 .5px rgba(20,27,60,.07), 0 2px 6px rgba(20,27,60,.06), 0 12px 28px rgba(20,27,60,.12)}
+.j-card.wagon::after{content:""; position:absolute; left:24px; right:24px; bottom:-9px; height:10px; pointer-events:none;
+  background:radial-gradient(circle at 9px 0, #E3E6F0 0 2.4px, #2C3668 2.9px 8.4px, transparent 9px) left/18px 10px no-repeat, radial-gradient(circle at 9px 0, #E3E6F0 0 2.4px, #2C3668 2.9px 8.4px, transparent 9px) right/18px 10px no-repeat}
+.j-card.wagon.j-ghost{box-shadow:inset 0 -6px 0 #F7E39A, 0 0 0 .5px rgba(20,27,60,.07), 0 4px 12px rgba(20,27,60,.07)}
+.j-card.wagon.j-ghost::after{display:none}
+.j-card.wagon.nope, .j-lift.wagon.nope{box-shadow:inset 0 0 0 2px var(--alerte), inset 0 -6px 0 var(--alerte), 0 10px 26px rgba(229,72,77,.18)}
+.j-lift.wagon{box-shadow:inset 0 -6px 0 var(--or), 0 0 0 .5px rgba(20,27,60,.07), 0 20px 46px rgba(20,27,60,.24)}
+.rc-fork{position:relative; height:58px; margin:-2px 0 0}
+.mini .rc-fork{height:40px}
+.rc-rails{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.rc-rails path{fill:none; transition:stroke .2s}
+.rc-rails .ties{stroke:#DCE0EB; stroke-width:13; stroke-dasharray:2.5 5.5}
+.rc-rails .rail{stroke:#BAC1D7; stroke-width:6}
+.rc-rails .rail-in{stroke:#fff; stroke-width:2}
+.rc-fork[data-side="l"] .rail.l, .rc-fork[data-side="r"] .rail.r{stroke:var(--or)}
+.rc-fork[data-side="l"] .ties.l, .rc-fork[data-side="r"] .ties.r{stroke:#F6E39C}
+.rc-lever{position:absolute; left:50%; top:4px; width:22px; height:22px; margin-left:-11px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(20,27,60,.2), inset 0 0 0 1.5px #BAC1D7}
+.mini .rc-lever{top:1px}
+.rc-lever::after{content:""; position:absolute; left:50%; top:3px; width:3px; height:9px; margin-left:-1.5px; border-radius:2px; background:var(--encre); transform-origin:50% 8px; transition:transform .3s var(--spring)}
+.rc-fork[data-side="l"] .rc-lever::after{transform:rotate(-50deg)}
+.rc-fork[data-side="r"] .rc-lever::after{transform:rotate(50deg)}
+.rc-gate .j-zt{position:relative}
+.rc-gate .j-zt::before{content:""; position:absolute; left:14px; right:14px; top:-3px; height:6px; pointer-events:none; background:radial-gradient(circle, #D5D9E6 0 2.1px, transparent 2.5px) center/11px 6px repeat-x; transition:filter .3s}
+.rc-gate.lit .j-zt::before{background-image:radial-gradient(circle, #F2C811 0 2.3px, transparent 2.7px); filter:drop-shadow(0 0 2.5px rgba(242,200,17,.85))}
+.fete .rc-gate .j-zt::before{animation:bulbs .5s steps(2) 4}
+@keyframes bulbs{50%{filter:none; opacity:.35}}
+
+/* Grande roue : une nacelle par réponse ; la carte attend au quai, en bas */
+.fw-stage{position:relative; --R:110px; --cw:100px; height:290px; margin:0 0 2px}
+.fw-legs{position:absolute; left:0; top:0; width:100%; height:100%; overflow:visible; pointer-events:none}
+.fw-legs path{fill:none; stroke:#C6CCE0; stroke-width:5; stroke-linecap:round; stroke-linejoin:round}
+.fw-legs .thin{stroke-width:2.5}
+.fw-legs .ground{stroke:#E0E3ED; stroke-width:4}
+.fw-wheel{position:absolute; left:50%; top:calc(8px + var(--R)); width:0; height:0; transform:rotate(var(--a, 0deg)); transition:transform var(--spin, 0ms) cubic-bezier(.45,.05,.2,1)}
+.fw-frame{position:absolute; left:calc(-1 * var(--R)); top:calc(-1 * var(--R)); overflow:visible; pointer-events:none}
+.fw-frame .rim{fill:none; stroke:#C6CCE0; stroke-width:3.5}
+.fw-frame .rim2{fill:none; stroke:#DADFEB; stroke-width:1.6}
+.fw-frame .spoke{stroke:#D6DBE8; stroke-width:1.3}
+.fw-frame .bulb{fill:#E4E7F0; transition:fill .35s}
+.fw-frame .bulb.on{fill:#F2C811}
+.fete .fw-frame .bulb{fill:#F2C811}
+.fw-frame .hub{fill:#F2C811; stroke:#fff; stroke-width:2.5}
+.fw-frame .hub-in{fill:#fff}
+.fw-cab{position:absolute; left:0; top:0; z-index:1; width:var(--cw); padding:11px 0 0; background:none; transform-origin:0 0; transform:rotate(var(--t)) translateY(var(--R)) rotate(calc(0deg - var(--t) - var(--a, 0deg))) translate(-50%, 0); transition:transform var(--spin, 0ms) cubic-bezier(.45,.05,.2,1); -webkit-tap-highlight-color:transparent}
+.fw-cab::before{content:""; position:absolute; left:50%; top:0; width:2px; height:12px; margin-left:-1px; border-radius:1px; background:#B5BCD3}
+.fw-cab::after{content:""; position:absolute; left:50%; top:-3px; width:7px; height:7px; margin-left:-3.5px; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 2px #B5BCD3}
+.fw-box{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:46px; padding:9px 6px 8px; border-radius:12px 12px 16px 16px; background:#fff; text-align:center; transform-origin:50% -11px;
+  box-shadow:0 0 0 .5px rgba(20,27,60,.1), 0 3px 10px rgba(20,27,60,.1); transition:box-shadow .25s, background-color .25s, transform .2s var(--spring)}
+.fw-box::before{content:""; position:absolute; left:9px; right:9px; top:-3px; height:6px; border-radius:4px 4px 2px 2px; background:var(--c)}
+.fw-box .j-zl{font-size:12.5px; font-weight:600; line-height:1.2; color:var(--encre); overflow-wrap:break-word; max-width:100%}
+.fw-box .j-ic{width:20px; height:20px}
+.fw-pax{display:flex; align-items:center; gap:3px}
+.fw-pax:empty{display:none}
+.fw-pax i{width:6px; height:6px; border-radius:50%; background:var(--or); box-shadow:0 0 4px rgba(242,200,17,.7)}
+.fw-pax b{font-size:11px; font-weight:700; color:var(--or-t); font-variant-numeric:tabular-nums}
+.fw-cab:active .fw-box{transform:scale(.95)}
+.fw-cab.over .fw-box{background:var(--or-3); box-shadow:inset 0 0 0 2px var(--or), 0 6px 16px rgba(20,27,60,.14); transform:scale(1.05)}
+.fw-cab.lit .fw-box{box-shadow:0 0 0 1.5px rgba(242,200,17,.75), 0 0 16px rgba(242,200,17,.4), 0 3px 10px rgba(20,27,60,.1)}
+.fw-cab.got .fw-box{animation:cabgot .5s var(--spring)}
+@keyframes cabgot{40%{transform:scale(1.1)}}
+.fw-cab.no .fw-box{background:#FFF1F0; box-shadow:inset 0 0 0 2px var(--alerte); animation:swing .7s ease}
+@keyframes swing{20%{transform:rotate(-10deg)} 45%{transform:rotate(8deg)} 70%{transform:rotate(-4deg)}}
+.j-fw .j-stage{margin-top:12px}
+.j-fw.tight .j-help{display:none}
+.j-fw.tight .fw-box{padding:8px 4px 7px; min-height:40px}
+.j-fw.tight .fw-box .j-zl{font-size:11.5px}
+.j-fw.tight .fw-box .j-ic{width:17px; height:17px}
+.j-fw.tight .j-stage{margin-top:8px}
+.j-tri.fete .j-help, .j-tri.j-locked .j-help{visibility:hidden}
+.j-locked .fw-cab{cursor:default}
+
+/* Petit train : poser les gares dans l'ordre ; la locomotive avance à chaque bonne gare */
+.tr-line{position:relative; margin:2px 0 10px}
+.tr-rail{position:absolute; left:15px; width:12px; margin-left:-6px; pointer-events:none;
+  background:linear-gradient(90deg, transparent 1.5px, #BAC1D7 1.5px 3.5px, transparent 3.5px 8.5px, #BAC1D7 8.5px 10.5px, transparent 10.5px), repeating-linear-gradient(180deg, #DCE0EB 0 3px, transparent 3px 9px)}
+.tr-st{position:relative; display:grid; grid-template-columns:30px minmax(0,1fr); align-items:center; gap:8px; min-height:30px; list-style:none}
+.tr-st > i{position:relative; z-index:1; justify-self:center; width:12px; height:12px; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 2.5px #BAC1D7}
+.tr-end > span{font-size:12.5px; font-weight:600; color:var(--encre-3)}
+.tr-placed{display:grid; gap:6px; margin:4px 0 6px; padding:0}
+.tr-placed:empty{margin:0}
+.tr-gare > i{box-shadow:inset 0 0 0 3px var(--or)}
+.tr-sign{display:flex; align-items:center; gap:10px; min-height:46px; padding:8px 12px 8px 9px; border-radius:15px; background:#fff; font-size:14px; font-weight:500; line-height:1.3; color:var(--encre); box-shadow:0 0 0 .5px rgba(20,27,60,.08), 0 2px 8px rgba(20,27,60,.06)}
+.tr-sign .tr-t{min-width:0; overflow-wrap:break-word}
+.tr-n{flex:none; width:24px; height:24px; border-radius:50%; background:var(--or-3); color:var(--or-t); display:grid; place-items:center; font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; transition:background-color .25s calc(var(--i, 0) * 70ms), color .25s calc(var(--i, 0) * 70ms)}
+.tr-gare.bad .tr-sign{box-shadow:inset 0 0 0 1.5px var(--alerte)}
+.tr-gare.bad .tr-n{background:var(--alerte); color:#fff}
+.j-locked .tr-n{background:var(--menthe); color:#fff}
+.tr-slot{margin-bottom:6px}
+.tr-slot[hidden]{display:none}
+.tr-slot > span{display:flex; align-items:center; min-height:46px; padding:0 13px; border-radius:15px; border:1.5px dashed #C9CFE0; color:var(--encre-3); font-size:13.5px; font-weight:500; transition:background-color .2s, border-color .2s, color .2s}
+.tr-slot > i{box-shadow:inset 0 0 0 2px #C9CFE0}
+.tr-line.over .tr-slot > span{border-color:var(--or); background:var(--or-3); color:var(--or-t)}
+.tr-loco{position:absolute; left:15px; top:0; z-index:3; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:50%; background:linear-gradient(165deg, #FFE55E, #F2C811); display:grid; place-items:center; box-shadow:0 0 0 3px #fff, 0 4px 10px rgba(20,27,60,.22); transition:top .52s cubic-bezier(.45,.05,.2,1)}
+.tr-loco svg{width:22px; height:22px}
+.tr-loco.brake{animation:brake .45s ease}
+@keyframes brake{25%{transform:translateY(-4px) rotate(-6deg)} 55%{transform:translateY(2px) rotate(4deg)} 80%{transform:translateY(-1px)}}
+.arrive .tr-arr > i{background:var(--or); box-shadow:0 0 0 3px #fff, 0 0 0 5px rgba(242,200,17,.45)}
+.arrive .tr-arr > span{color:var(--or-t)}
+.tr-tray{display:grid; gap:10px}
+.tr-tix{display:grid; gap:6px}
+.tr-tix:empty{display:none}
+.tr-tk{position:relative; display:flex; align-items:stretch; width:100%; min-height:48px; padding:0; border-radius:15px; background:#fff; text-align:left; touch-action:none; cursor:grab;
+  box-shadow:0 0 0 .5px rgba(20,27,60,.09), 0 2px 8px rgba(20,27,60,.07); transition:transform .25s var(--spring), box-shadow .2s, background-color .2s}
+.tr-stub{flex:none; width:32px; border-right:1.5px dashed #D7DBE7; background:radial-gradient(circle, #fff 0 3.5px, #C9CFE0 4px 5.5px, transparent 6px) center no-repeat}
+.tr-tk .tr-t{flex:1; min-width:0; padding:12px 14px 12px 12px; font-size:14px; font-weight:500; line-height:1.3; color:var(--encre); overflow-wrap:break-word}
+.tr-tk:active{transform:scale(.98)}
+.tr-tk.drag{z-index:5; cursor:grabbing; transition:box-shadow .2s; box-shadow:0 0 0 .5px rgba(20,27,60,.08), 0 18px 40px rgba(20,27,60,.22)}
+.tr-tk.no{background:#FFF1F0; box-shadow:inset 0 0 0 1.5px var(--alerte)}
+.tr-gare.new .tr-sign{box-shadow:0 0 0 1.5px var(--or), 0 6px 16px rgba(242,200,17,.25)}
+.j-train.arrive .j-help, .j-train.j-locked .j-help{visibility:hidden}
+@media (prefers-reduced-motion: reduce){
+  .fw-wheel, .fw-cab, .tr-loco{transition:none !important}
+  .fw-cab.no .fw-box, .tr-loco.brake, .fete .rc-gate .j-zt::before, .j-prog i.pop{animation:none !important}
+}
+/* Étiquette d'attraction dans le panneau des questions */
+.answer .lbl.j-lbl{display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px 0 7px; margin-bottom:7px; border-radius:99px; background:var(--or-3); color:var(--or-t); font-size:12px; font-weight:650; box-shadow:inset 0 0 0 .5px rgba(180,138,0,.28)}
+.answer .lbl.j-lbl svg{width:15px; height:15px}
+/* Stand de tir : chaque réponse a sa cible ; la fléchette part vers celle qu'on touche */
+.tir .choice{padding-right:52px}
+.tir .choice::after{right:12px; width:26px; height:26px; margin-top:-13px; box-shadow:none;
+  background:radial-gradient(circle, var(--or) 0 3.2px, #fff 3.7px 6.6px, #C9CFE0 7.1px 9px, #fff 9.5px 11.2px, #D9DDE8 11.7px 13px)}
+.tir .choice.hit::after{animation:hit .38s var(--spring)}
+@keyframes hit{30%{transform:scale(1.28)}}
+.tir .choice.yes::after{background:var(--menthe) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.3l2.6 2.6L11 4.3' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat; transition:background .15s .17s, transform .3s var(--spring)}
+.tir .choice.no::after{background:var(--alerte) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M4.2 4.2l5.6 5.6M9.8 4.2l-5.6 5.6' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round'/%3E%3C/svg%3E") center/13px no-repeat; transition:background .15s .17s}
+.choice .dart{position:absolute; right:25px; top:50%; width:24px; height:3px; margin:-1.5px -24px 0 0; border-radius:2px; transform-origin:0 50%; pointer-events:none; z-index:2;
+  background:linear-gradient(90deg, var(--encre) 0 64%, var(--or) 64%); box-shadow:0 1px 2px rgba(20,27,60,.25)}
+.answer .q:focus, .answer .lbl:focus{outline:none}
+/* Tape-taupe : les réponses sortent de leur trou ; une taupe touchée s'enfonce */
+.mchips.moles{gap:14px 8px; padding:4px 2px 6px}
+.mchip.mole{position:relative; z-index:0; min-height:0; padding:0 0 6px; border:0; border-radius:0; background:none; color:var(--encre)}
+.mchip.mole::after{content:""; position:absolute; z-index:-1; left:2px; right:2px; bottom:0; height:16px; border-radius:50%; background:radial-gradient(ellipse at 50% 35%, #3D4782 0 42%, rgba(61,71,130,.35) 60%, transparent 71%)}
+.mchip.mole > span{display:flex; align-items:center; justify-content:center; min-height:42px; padding:6px 15px; border-radius:21px 21px 13px 13px; background:#fff; font-size:14px; font-weight:600; line-height:1.2;
+  box-shadow:inset 0 0 0 1.5px var(--ligne), 0 3px 8px rgba(20,27,60,.09); transition:transform .25s var(--spring), background-color .2s, color .2s, box-shadow .2s; animation:moleup .5s var(--spring) both; animation-delay:calc(var(--i, 0) * 55ms)}
+@keyframes moleup{from{transform:translateY(16px) scale(.7); opacity:0}}
+.mchip.mole.on > span{background:var(--nuit); color:#fff; box-shadow:0 0 0 2px var(--or), 0 2px 6px rgba(20,27,60,.2); transform:translateY(4px) scaleY(.94)}
+.mchip.mole.bonk > span{animation:bonk .34s ease-out both}
+@keyframes bonk{0%{transform:translateY(-3px) scale(1.04)} 45%{transform:translateY(7px) scaleY(.84)} 100%{transform:translateY(4px) scaleY(.94)}}
+@media (prefers-reduced-motion: reduce){ .tir .choice.hit::after, .mchip.mole > span, .mchip.mole.bonk > span{animation:none !important} }
+
+/* ═════════ Parc : la nuit, et les attractions qui se rallument ═════════ */
+.map .nuit{position:absolute; inset:0; z-index:1; pointer-events:none; background:linear-gradient(180deg, rgba(8,10,32,.74), rgba(8,10,32,.64));
+  -webkit-mask-image:var(--holes); mask-image:var(--holes); -webkit-mask-composite:source-in; mask-composite:intersect}
+.map .eclat{position:absolute; z-index:1; width:300px; height:300px; margin:-150px 0 0 -150px; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
+  background:radial-gradient(circle, rgba(255,244,190,.95), rgba(255,214,60,.55) 30%, rgba(255,200,40,.18) 52%, rgba(255,214,60,0) 70%); animation:eclat 2.4s var(--ease) .35s both}
+@keyframes eclat{0%{transform:scale(.1); opacity:0} 25%{opacity:1} 100%{transform:scale(1.5); opacity:0}}
+.pin-label .pin-at{display:inline-grid; place-items:center; width:18px; height:18px; margin:-2px 5px -4px -3px; color:var(--or-t); vertical-align:baseline}
+.pin-label .pin-at svg{width:16px; height:16px}
+/* Fiche de mission : l'attraction de la mission */
+.sheet-attr{display:flex; align-items:center; gap:12px; margin:14px 0 2px; padding:11px 13px; border-radius:18px; background:var(--craie); color:var(--encre-2)}
+.sheet-attr > i{flex:none; display:grid; place-items:center; width:40px; height:40px; border-radius:13px; background:#fff; color:var(--encre-3); box-shadow:0 1px 3px rgba(20,27,60,.08)}
+.sheet-attr > i svg{width:24px; height:24px}
+.sheet-attr small{display:block; font-size:12px; font-weight:600; color:var(--encre-3)}
+.sheet-attr b{display:block; font-size:14.5px; font-weight:650; line-height:1.3; color:var(--encre)}
+.sheet-attr.on{background:var(--or-3)}
+.sheet-attr.on > i{background:linear-gradient(165deg, #FFE55E, #F2C811); color:var(--encre); box-shadow:0 0 0 3px rgba(242,200,17,.25), 0 4px 10px rgba(214,170,0,.3)}
+.sheet-attr.on small{color:var(--or-t)}
+/* Récompenses : l'attraction rallumée */
+.rw-item.attr-it > i{flex:none; display:grid; place-items:center; width:48px; height:48px; border-radius:15px; background:linear-gradient(165deg, #FFE55E, #F2C811); color:var(--encre); box-shadow:0 0 0 3px rgba(242,200,17,.22), 0 6px 14px rgba(214,170,0,.3)}
+.rw-item.attr-it > i svg{width:28px; height:28px}
+@media (prefers-reduced-motion: reduce){ .map .eclat{animation:none; opacity:0} }
+.rw-item.attr-it > i{justify-self:center}

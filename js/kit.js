@@ -38,10 +38,10 @@ function board(title, intro) {
   return { el, body: $('.board', el) };
 }
 
-/* Association : deux réponses possibles → pile de cartes à trier ; sinon → paires à relier. Émet match.pick et match.check {values} */
+/* Association : deux réponses possibles → montagnes russes ; sinon → grande roue. Émet match.pick et match.check {values} */
 function matching(spec) {
   if (spec.options.length === 2) {
-    const B = window.J.tri({ title: spec.title, intro: spec.intro, options: spec.options, rows: spec.rows.map(r => ({ id: r.id, t: r.label, sub: r.sub })), btn: spec.btn || 'Vérifier mes réponses', ev: 'match' });
+    const B = window.J.tri({ title: spec.title, intro: spec.intro, options: spec.options, rows: spec.rows.map(r => ({ id: r.id, t: r.label, sub: r.sub })), btn: spec.btn || 'Vérifier mes réponses', key: spec.key, ev: 'match' });
     const mark = B.mark; B.mark = (ok, bad) => (ok || bad) ? mark(bad || [], ok || undefined) : mark();
     B.body = B.el.firstElementChild;
     return B;
@@ -49,25 +49,25 @@ function matching(spec) {
   return window.J.pairs(spec);
 }
 
-/* Ordre : des cartes à faire glisser à leur place. Émet order.change et order.check {order} */
+/* Ordre : le petit train, gare après gare. Émet order.change et order.check {order} */
 function ordering(spec) { return window.J.order(spec); }
 
-/* Mini-jeu de leçon, avec sa solution et une explication par erreur.
+/* Attraction de leçon, avec sa solution (chaque choix est jugé tout de suite) et une explication par erreur.
    Tri : rows [id, texte, case, explication]. Paires : rows [id, libellé, partenaire, explication]. Ordre : items dans le bon ordre, start mélangé, why[position]. */
 async function jeu(x, spec) {
   const T = { title: spec.title, intro: spec.intro, btn: spec.btn || 'Vérifier' };
   if (spec.pairs) {
-    const B = window.J.pairs({ ...T, rows: spec.rows.map(r => ({ id: r[0], label: r[1] })), options: spec.options });
+    const B = window.J.pairs({ ...T, rows: spec.rows.map(r => ({ id: r[0], label: r[1] })), options: spec.options, key: Object.fromEntries(spec.rows.map(r => [r[0], r[2]])), why: Object.fromEntries(spec.rows.map(r => [r[0], r[3]])) });
     x.app(spec.app, B.el); x.todo(spec.todo);
     await x.wait({ 'match.pick': () => { B.mark(); }, 'match.check': ({ values }) => {
-      if (spec.rows.some(r => !values[r[0]])) return x.oops('', spec.miss || 'Relie chaque élément avant de vérifier.');
+      if (spec.rows.some(r => !values[r[0]])) return x.oops('', spec.miss || 'Place chaque élément avant de vérifier.');
       const bad = spec.rows.filter(r => values[r[0]] !== r[2]);
       B.mark(spec.rows.filter(r => !bad.includes(r)).map(r => r[0]), bad.map(r => r[0]));
       if (!bad.length) { B.lock(); return true; }
       return x.oops('', bad[0][3]);
     } });
   } else if (spec.items) {
-    const B = window.J.order({ ...T, items: spec.items, start: spec.start });
+    const B = window.J.order({ ...T, items: spec.items, start: spec.start, key: spec.items.map(i => i[0]), why: spec.why });
     x.app(spec.app, B.el); x.todo(spec.todo);
     await x.wait({ 'order.change': () => {}, 'order.check': ({ order }) => {
       const k = order.findIndex((id, i) => id !== spec.items[i][0]);
@@ -75,7 +75,7 @@ async function jeu(x, spec) {
       B.flag([k]); return x.oops('', spec.why[k]);
     } });
   } else {
-    const B = window.J.tri({ ...T, options: spec.options, rows: spec.rows.map(r => ({ id: r[0], t: r[1] })), ev: 'jeu' });
+    const B = window.J.tri({ ...T, options: spec.options, rows: spec.rows.map(r => ({ id: r[0], t: r[1] })), key: Object.fromEntries(spec.rows.map(r => [r[0], r[2]])), why: Object.fromEntries(spec.rows.map(r => [r[0], r[3]])), ev: 'jeu' });
     x.app(spec.app, B.el); x.todo(spec.todo);
     await x.wait({ 'jeu.pick': () => {}, 'jeu.check': ({ values }) => {
       const bad = spec.rows.filter(r => values[r[0]] !== r[2]);

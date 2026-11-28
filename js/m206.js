@@ -49,7 +49,7 @@ const def = {
     await x.pixel('Fractionner une cellule ne doit pas changer le nombre d’événements. Nous allons donc fractionner en colonnes.');
     await x.say('oscar', 'Et si nous choisissons « en lignes » ?');
     await x.pixel('Une cellule de trois éléments produirait alors trois lignes. Ce n’est pas notre objectif : chaque ligne d’entraînement doit rester une ligne. À toi : quel geste pour chaque besoin ?');
-    const B = K2.sorter({ bare: true, title: 'Quel geste pour quel besoin ?', btn: 'Vérifier', options: OPS,
+    const B = K2.sorter({ key: () => SOL, bare: true, title: 'Quel geste pour quel besoin ?', btn: 'Vérifier', options: OPS,
       rows: [['a', 'Équipement → attraction, zone, type', 'Une cellule, trois champs'], ['b', 'Le texte avant une virgule', 'Martin, Alice → Martin'], ['c', 'Prénom + espace + nom', 'Alice Martin'], ['d', 'Retrouver la zone d’un équipement dans une autre table', 'Deux tables, une clé commune']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
     const sec = $('[data-sec="2"]', card); sec.appendChild(B.el); sec.style.display = '';
     requestAnimationFrame(() => sc.scrollTo({ top: Math.max(0, sec.offsetTop - 14), behavior: 'smooth' }));

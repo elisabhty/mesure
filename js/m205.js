@@ -145,7 +145,7 @@ const def = {
     await x.pixel('Quatre portes. Passer une porte ne garantit pas de passer les suivantes.');
     await x.say('gabriel', 'Une date peut donc être correctement convertie, tout en restant inutilisable pour notre analyse de mai.');
     await x.pixel('Exactement. Et une date techniquement invalide ne doit pas disparaître de notre registre. À toi : à quelle porte chaque cas s’arrête-t-il ?');
-    const B = K2.sorter({ bare: true, title: 'Où le contrôle échoue-t-il ?', btn: 'Vérifier', options: DOORS,
+    const B = K2.sorter({ key: () => SOL, bare: true, title: 'Où le contrôle échoue-t-il ?', btn: 'Vérifier', options: DOORS,
       rows: [['a', 'Date_Demande vide', 'null'], ['b', '31/02/2026', 'Contrat : jj/MM/aaaa'], ['c', '03/04/2026', 'Lue selon le contrat : 3 avril 2026'], ['d', 'Intervention 14/05, demande 28/05', 'Deux dates lisibles, en mai']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
     const sec = $('[data-sec="2"]', card); sec.appendChild(B.el); sec.style.display = '';
     requestAnimationFrame(() => sc.scrollTo({ top: Math.max(0, sec.offsetTop - 14), behavior: 'smooth' }));
@@ -215,7 +215,7 @@ const def = {
         }
       });
       await x.pixel('Trois lignes. Lis leurs dates, puis applique le contrat : jj/MM/aaaa se lit en français, aaaa-MM-jj en ISO, tout le reste est signalé.');
-      const B = K2.sorter({ title: 'Lecture selon le contrat', intro: 'Valeurs relevées dans la vue temporaire.', btn: 'Vérifier', options: [['fr', 'Français'], ['iso', 'ISO'], ['non', 'Non accepté']],
+      const B = K2.sorter({ key: () => SOL, title: 'Lecture selon le contrat', intro: 'Valeurs relevées dans la vue temporaire.', btn: 'Vérifier', options: [['fr', 'Français'], ['iso', 'ISO'], ['non', 'Non accepté']],
         rows: [['a', '28/05/2026', 'M0055 · Date_Demande'], ['b', '2026-05-14', 'M0055 · Date_Intervention'], ['c', '12/31/2026', 'M0550 · Date_Intervention'], ['d', '03/04/2026', 'M0650 · Date_Demande']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
       x.app('fmt205', B.el);
       const SOL = { a: 'fr', b: 'iso', c: 'non', d: 'fr' };

@@ -106,7 +106,7 @@ const def = {
     await x.pixel('Le second : Obtenir les données, qui présente tous les connecteurs, puis Classeur Excel.');
     x.pbi.mark();
     await x.pixel('Ensuite, Power BI demande le fichier, puis ouvre le Navigateur pour choisir ce qu’on charge.');
-    await K.jeu(x, { app: 'jeu102', title: 'Les étapes de la connexion', intro: 'Glisse les étapes dans l’ordre.', btn: 'Vérifier l’ordre', todo: 'Remets les quatre étapes de la connexion dans l’ordre.',
+    await K.jeu(x, { app: 'jeu102', title: 'Les étapes de la connexion', intro: 'Pose les gares dans l’ordre du trajet.', btn: 'Vérifier l’ordre', todo: 'Remets les quatre étapes de la connexion dans l’ordre.',
       items: [['conn', 'Choisir le connecteur Classeur Excel'], ['file', 'Sélectionner le fichier de Lola'], ['nav', 'Choisir le tableau dans le Navigateur'], ['load', 'Charger les lignes dans le modèle']],
       start: ['load', 'nav', 'conn', 'file'],
       why: ['Tout commence par le connecteur : c’est lui qui sait lire un classeur Excel.', 'Une fois le connecteur choisi, Power BI demande le fichier.', 'Le Navigateur s’ouvre après le choix du fichier, pour choisir ce qu’on charge.', 'Le chargement vient en dernier.'] });

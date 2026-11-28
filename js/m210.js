@@ -151,7 +151,7 @@ const def = {
       await K2.work(x, { cur: STRUCT, next: () => !K2.shown(x, STRUCT) ? K2.showTodo(x, STRUCT) : pbi.q2.stepsOpen ? true : ['Retrouve les étapes de structure : ouvre ses Étapes appliquées.', ['[data-q="steps"]']] });
       await x.pause(900);
       const ROWS = [['a', 'Contexte_Retire', 'Titre, notes et ligne vide du haut', '5'], ['b', 'Entetes_Promus', 'La ligne des noms de colonnes', '1'], ['c', 'Commentaire_Structure_Retire', 'La note glissée au milieu', '1'], ['d', 'Pied_Export_Retire', 'Total provisoire et fin d’export', '2'], ['e', 'Copie_Export_Confirmee_Retiree', 'prep_Maintenance_Doublons', '1']];
-      const B = K2.sorter({ title: 'De 1 109 à 1 099 lignes', intro: 'Combien de lignes chaque étape retire-t-elle ?', btn: 'Vérifier', options: [['1', '− 1'], ['2', '− 2'], ['5', '− 5']], rows: ROWS.map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
+      const B = K2.sorter({ key: () => Object.fromEntries(ROWS.map(r => [r[0], r[3]])), title: 'De 1 109 à 1 099 lignes', intro: 'Combien de lignes chaque étape retire-t-elle ?', btn: 'Vérifier', options: [['1', '− 1'], ['2', '− 2'], ['5', '− 5']], rows: ROWS.map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
       x.app('rec210', B.el);
       x.todo('Indique l’écart de chaque étape.');
       await x.wait({ 'k2.pick': () => {}, 'k2.check': ({ values }) => {
@@ -196,7 +196,7 @@ const def = {
       await K2.prof(x, LIB, 'A_Investiguer_Dates');
       await K2.num(x, 'Dossiers temporels.', [{ id: 'n', label: 'TRUE · A_Investiguer_Dates' }], v => v.n === 6 ? true : ['', 'Lis la ligne TRUE de la distribution, sur l’ensemble des données.']);
       const s1 = si(5), sc = part(x);
-      const B = K2.sorter({ title: 'Quatre façons d’en parler', intro: 'Classe chaque phrase selon ce qu’elle affirme.', btn: 'Vérifier', options: [['obs', 'Anomalie observée'], ['hyp', 'Hypothèse'], ['conf', 'Correction confirmée'], ['open', 'Décision ouverte']],
+      const B = K2.sorter({ key: () => SOL, title: 'Quatre façons d’en parler', intro: 'Classe chaque phrase selon ce qu’elle affirme.', btn: 'Vérifier', options: [['obs', 'Anomalie observée'], ['hyp', 'Hypothèse'], ['conf', 'Correction confirmée'], ['open', 'Décision ouverte']],
         rows: [['a', 'M0040 porte la date du 31 février', 'Constat sur la source'], ['b', 'Le coût négatif de M0220 est peut-être un avoir', 'Explication possible'], ['c', 'La copie de M0899 a été retirée, justificatif à l’appui', 'Mission 204'], ['d', 'M0500 reste Planifiée, en attente de confirmation', 'Statut']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
       x.app('cls210', B.el);
       const SOL = { a: 'obs', b: 'hyp', c: 'conf', d: 'open' };
@@ -350,7 +350,7 @@ const def = {
       const pbi = x.pbi, P = () => pbi.P; timer();
       await x.say('victoria', 'Je ne veux pas seulement savoir ce que vous avez transformé. Dites-moi maintenant ce que nous pouvons utiliser, et avec quelles limites.');
       const sd = part(x);
-      const B = K2.sorter({ title: 'Décision par périmètre', intro: 'Ce que chaque résultat permet, en l’état.', btn: 'Vérifier', options: [['ok', 'Réconcilié'], ['res', 'Avec réserves'], ['diag', 'Diagnostic seulement'], ['hist', 'Historique conservé']],
+      const B = K2.sorter({ key: () => SOL, title: 'Décision par périmètre', intro: 'Ce que chaque résultat permet, en l’état.', btn: 'Vérifier', options: [['ok', 'Réconcilié'], ['res', 'Avec réserves'], ['diag', 'Diagnostic seulement'], ['hist', 'Historique conservé']],
         rows: [['a', 'Maintenance de mai 2026', LIB], ['b', 'Archives 2025', ANN], ['c', 'Atelier M206', A206], ['d', 'Atelier M209', N.e], ['e', 'Rapport du module 1', 'Checkpoint 110']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
       x.app('dec210', B.el);
       const SOL = { a: 'diag', b: 'ok', c: 'res', d: 'res', e: 'hist' };

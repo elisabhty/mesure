@@ -114,17 +114,34 @@ function placeLabels(map) {
   }
 }
 if (window.ResizeObserver) { let lastW = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w && lastW && w !== lastW) $$('#maps .map').forEach(placeLabels); lastW = w || lastW; }).observe($('#maps')); }
+/* Attractions : celle de chaque mission vient du registre (js/arcade.js) */
+const ARC = () => window.PBQ_ARCADE || {};
+const attrOf = id => { const a = ARC()[id]; return a ? a.kind : null; };
+let newLitShown = false;
 function renderPark(scrollToCurrent) {
   $('#xp-home').textContent = fr(S.xp + ' XP');
+  newLitShown = false;
   const box = $('#maps'); box.innerHTML = '';
   const cur = currentMission();
   const mods = (D.modules || [{ n: 1, img: 'carte.webp' }]).slice().reverse();
   for (const md of mods) {
     const open = md.n === 1 || doneIn(md.n) > 0 || unlocked(md.n * 100 + 1);
     const map = h(`<div class="map ${open ? '' : 'shut'}" data-mod="${md.n}"><img src="img/${md.img}" alt="${esc(md.alt || '')}" width="640" height="1280"></div>`);
-    for (const m of D.missions.filter(x => modOf(x.id) === md.n)) {
+    /* Le parc est éteint ; chaque mission réussie rallume son attraction (un halo autour de sa pastille) */
+    const ms = D.missions.filter(x => modOf(x.id) === md.n), lit = ms.filter(x => isDone(x.id));
+    if (open && lit.length < ms.length) {
+      const holes = lit.map(x => `radial-gradient(circle 128px at ${x.pin[0]}% ${x.pin[1]}%, transparent 48%, #000 100%)`).join(', ') || 'linear-gradient(#000, #000)';
+      const nuit = h('<div class="nuit" aria-hidden="true"></div>'); nuit.style.setProperty('--holes', holes); map.appendChild(nuit);
+    }
+    if (S.newLit && lit.some(x => x.id === S.newLit)) {
+      const x = lit.find(y => y.id === S.newLit);
+      map.appendChild(h(`<span class="eclat" aria-hidden="true" style="left:${x.pin[0]}%; top:${x.pin[1]}%"></span>`));
+      newLitShown = true;
+    }
+    for (const m of ms) {
       const st = isDone(m.id) ? 'done' : (m.id === cur ? 'current' : (unlocked(m.id) ? 'open' : 'locked'));
-      const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}, ${({ done: 'terminée', current: 'à faire', open: 'ouverte', locked: 'verrouillée' })[st]}">${m.id}<span class="pin-label ${st === 'locked' ? 'locked' : ''}" aria-hidden="true">${esc(fr(m.titre))}</span></button>`);
+      const k = attrOf(m.id), ic = st === 'done' && k && window.J ? `<i class="pin-at">${window.J.icon(k)}</i>` : '';
+      const b = h(`<button class="pin ${st}" style="left:${m.pin[0]}%; top:${m.pin[1]}%" data-m="${m.id}" aria-label="Mission ${m.id}, ${esc(m.titre)}, ${({ done: 'terminée', current: 'à faire', open: 'ouverte', locked: 'verrouillée' })[st]}">${m.id}<span class="pin-label ${st === 'locked' ? 'locked' : ''}" aria-hidden="true">${ic}${esc(fr(m.titre))}</span></button>`);
       b.addEventListener('click', () => openMissionSheet(m.id));
       map.appendChild(b);
     }
@@ -135,7 +152,9 @@ function renderPark(scrollToCurrent) {
     }
   }
   const n1 = doneIn(1);
-  $('#park-foot').textContent = fr(n1 === 10 ? 'Module 1 terminé. Tu maîtrises les fondamentaux de Power BI.' : `Module 1 · ${n1} mission${n1 > 1 ? 's' : ''} sur 10 · ${n1 * 10} % terminé`);
+  $('#park-foot').textContent = fr(n1 === 10 ? 'Module 1 terminé. Tout le parc est rallumé.' : `Module 1 · ${n1} attraction${n1 > 1 ? 's' : ''} rallumée${n1 > 1 ? 's' : ''} sur 10`);
+  /* L'éclat d'une attraction qui vient de se rallumer ne se joue qu'une fois */
+  if (newLitShown) setTimeout(() => { if (S.newLit) { S.newLit = null; store.save(); } }, 2600);
   if (scrollToCurrent) {
     const sc = $('#park-scroll'), id = cur || D.missions[D.missions.length - 1].id;
     requestAnimationFrame(() => { const pin = $(`.pin[data-m="${id}"]`); if (!pin) return; const map = pin.closest('.map'); sc.scrollTop = Math.max(0, map.offsetTop + pin.offsetTop - sc.clientHeight * .55); });
@@ -153,6 +172,7 @@ function openMissionSheet(id) {
     <h2>${esc(fr(m.titre))}</h2>
     <div class="meta"><span>${esc(fr(m.duree))}</span><span>8 ${finale(id) ? 'défis' : 'exercices'}</span><span>${xpOf(id)}${NB}XP</span><span>${finale(id) ? 'Épreuve finale' : modOf(id) > 1 ? 'Intermédiaire' : 'Débutant'}</span></div>
     ${goals ? `<ul class="goals">${goals}</ul>` : ''}
+    ${attrCard(id, st === 'done')}
   </div>`));
   if (st === 'locked') {
     sh.appendChild(h(`<p>Cette mission s’ouvre quand la mission ${prevOf(id)} est terminée.</p>`));
@@ -165,11 +185,17 @@ function openMissionSheet(id) {
       sh.appendChild(btn(fr(`Reprendre à l’exercice ${res + 1}/8`), 'cta', () => { closeSheet(); runMission(id, { from: res }); }));
       sh.appendChild(btn('Recommencer la mission', 'btn-2', () => { closeSheet(); runMission(id, { from: 0 }); }));
     } else {
-      sh.appendChild(btn(st === 'done' ? 'Rejouer la mission' : 'Commencer la mission', 'cta', () => { closeSheet(); runMission(id, { from: 0 }); }));
+      if (st === 'done' && ARC()[id]) sh.appendChild(btn('Jouer à l’attraction', 'cta', () => { closeSheet(); runArcade(id); }));
+      sh.appendChild(btn(st === 'done' ? 'Rejouer la mission' : 'Commencer la mission', st === 'done' && ARC()[id] ? 'btn-2' : 'cta', () => { closeSheet(); runMission(id, { from: 0 }); }));
       if (st === 'done') sh.appendChild(h(`<p class="lc-note" style="text-align:center">Les récompenses de cette mission sont déjà acquises.</p>`));
     }
   }
   openSheet();
+}
+/* Carte « attraction » d'une mission : rallumée (jouable) ou encore éteinte */
+function attrCard(id, on) {
+  const a = ARC()[id]; if (!a || !window.J) return '';
+  return `<div class="sheet-attr ${on ? 'on' : ''}"><i>${window.J.icon(a.kind)}</i><div><small>${on ? 'Attraction rallumée' : 'Attraction à rallumer'}</small><b>${esc(fr(window.J.name(a.kind)))}${a.title ? ' · ' + esc(fr(a.title)) : ''}</b></div></div>`;
 }
 function btn(label, cls, fn) { const b = h(`<button class="${cls}">${esc(label)}</button>`); b.addEventListener('click', fn); return b; }
 
@@ -294,6 +320,11 @@ function act(type, payload) {
   queued = { type, payload, at: performance.now() };
   hurry();
   return 'queued';
+}
+/* Essai à blanc d'une attraction : le gestionnaire juge (et explique) un choix sans terminer l'étape */
+function probe(type, payload) {
+  const e = expectation; if (!e || !e.handlers[type]) return undefined;
+  try { return e.handlers[type](payload); } catch (err) { console.error(err); return undefined; }
 }
 function cancelRun() {
   run++;
@@ -490,6 +521,16 @@ grab.addEventListener('click', openHistory);
   dock.addEventListener('pointerup', () => { y0 = null; }); dock.addEventListener('pointercancel', () => { y0 = null; });
 }
 
+/* Stand de tir : une fléchette file vers la cible de la réponse touchée (la cible est dessinée par le bouton lui-même) */
+function dart(b) {
+  if (reduced || window.PBQ_FAST) return;
+  $$('.dart', b).forEach(d => d.remove());
+  const d = h('<i class="dart" aria-hidden="true"></i>'); b.appendChild(d);
+  d.animate([{ transform: 'translate(38px, 46px) rotate(50deg) scale(1.15)', opacity: 0 }, { opacity: 1, offset: .25 }, { transform: 'translate(0, 0) rotate(50deg) scale(1)', opacity: 1 }], { duration: 170, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'forwards' });
+  setTimeout(() => { b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); }, 165);
+  setTimeout(() => { d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' }); setTimeout(() => d.remove(), 160); }, 560);
+}
+
 /* Cibles */
 let targets = [];
 function target(...els) { untarget(); targets = els.flat().filter(Boolean); targets.forEach(e => e.classList.add('is-target')); }
@@ -597,9 +638,9 @@ function makeCtx(m, t, exIndex, pbi) {
     multi(q, options, check, btnLabel) {
       /* Affirmations longues : une pile de cartes à balayer, à droite pour cocher, à gauche pour écarter */
       if (window.J && options.some(o => String(o.t).length > 26)) return new Promise((resolve, reject) => {
-        const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}</div>`);
-        const T = window.J.tri({ bare: true, options: [['non', 'Écarter'], ['oui', 'Cocher']], rows: options.map(o => ({ id: String(o.v), t: o.t })), btn: btnLabel || 'Valider',
-          help: 'Glisse chaque carte : à droite pour la cocher, à gauche pour l’écarter.', onPick: () => {},
+        const el = h(`<div>${window.J.tag('coaster')}${q ? `<p class="q">${esc(fr(q))}</p>` : ''}</div>`);
+        const T = window.J.tri({ bare: true, mini: true, options: [['non', 'Écarter'], ['oui', 'Cocher']], rows: options.map(o => ({ id: String(o.v), t: o.t })), btn: btnLabel || 'Valider',
+          help: 'Envoie chaque wagon : à droite pour le cocher, à gauche pour l’écarter.', onPick: () => {},
           check: vals => {
             if (t !== run) return;
             const sel = options.filter(o => vals[String(o.v)] === 'oui').map(o => o.v);
@@ -613,13 +654,17 @@ function makeCtx(m, t, exIndex, pbi) {
       });
       return new Promise((resolve, reject) => {
         const sel = new Set();
-        const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="mchips"></div><button class="cta dark">${esc(btnLabel || 'Valider')}</button></div>`);
-        options.forEach(o => {
-          const b = h(`<button class="mchip" data-v="${esc(String(o.v))}" aria-pressed="false">${esc(fr(o.t))}</button>`);
-          b.addEventListener('click', () => { sel.has(o.v) ? sel.delete(o.v) : sel.add(o.v); b.classList.toggle('on', sel.has(o.v)); b.setAttribute('aria-pressed', sel.has(o.v)); });
+        const el = h(`<div>${window.J ? window.J.tag('taupe') : '<span class="lbl">À toi de répondre</span>'}${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="mchips moles"></div><button class="cta dark">${esc(btnLabel || 'Valider')}</button></div>`);
+        options.forEach((o, i) => {
+          const b = h(`<button class="mchip mole" style="--i:${i}" data-v="${esc(String(o.v))}" aria-pressed="false"><span>${esc(fr(o.t))}</span></button>`);
+          b.addEventListener('click', () => {
+            sel.has(o.v) ? sel.delete(o.v) : sel.add(o.v); const on = sel.has(o.v);
+            b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+            /* Coup de maillet : la taupe touchée s'enfonce dans son trou */
+            if (on && !reduced && !window.PBQ_FAST) { b.classList.remove('bonk'); void b.offsetWidth; b.classList.add('bonk'); if (window.J) window.J.fx.buzz('ok'); }
+          });
           $('.mchips', el).appendChild(b);
         });
-        if (options.some(o => String(o.t).length > 26)) $('.mchips', el).classList.add('long');
         $('.cta', el).addEventListener('click', () => {
           if (t !== run) return;
           const r = check([...sel]);
@@ -647,7 +692,7 @@ function makeCtx(m, t, exIndex, pbi) {
     /* Cible montrée seulement après deux erreurs ou le troisième indice */
     guide(g) { ctx._g = g; if (ctx._gOn) showGuide(); else if (pbi && !g) pbi.mark(); },
     oops(label, fallback) {
-      ctx.errors++;
+      ctx.errors++; ctx.streak = 0;
       if (ctx.errors >= 2 && !ctx._gOn) { ctx._gOn = true; showGuide(); }
       const e = findErr(tx.e, label);
       const msg = e ? e[1] : (fallback || label);
@@ -661,13 +706,16 @@ function makeCtx(m, t, exIndex, pbi) {
     hints: tx.i, errs: tx.e,
     ask(q, options) {
       return new Promise((resolve, reject) => {
-        const el = h(`<div><span class="lbl">À toi de répondre</span>${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="choices"></div></div>`);
+        const el = h(`<div class="tir">${window.J ? window.J.tag('tir') : '<span class="lbl">À toi de répondre</span>'}${q ? `<p class="q">${esc(fr(q))}</p>` : ''}<div class="choices"></div></div>`);
         options.forEach(o => {
           const b = h(`<button class="choice">${esc(fr(o.t))}</button>`);
           b.addEventListener('click', () => {
             if (t !== run || el.dataset.done) return;
-            /* Bonne réponse : la carte passe au vert, puis la question se referme */
-            if (o.ok) { el.dataset.done = '1'; b.classList.add('yes'); announce('Bonne réponse.'); $$('.choice', el).forEach(c => { if (c !== b) c.classList.add('fade'); }); setTimeout(() => { if (t !== run) return; closeAnswer(); resolve(o); }, window.PBQ_FAST ? 30 : 620); return; }
+            /* Stand de tir : la fléchette part vers la cible de la réponse choisie */
+            const J = window.J && window.J.fx; if (J) J.buzz(o.ok ? 'ok' : 'no');
+            dart(b);
+            /* Bonne réponse : la cible tombe, la carte passe au vert, puis la question se referme */
+            if (o.ok) { el.dataset.done = '1'; b.classList.add('yes'); announce('Bonne réponse.'); if (J) setTimeout(() => J.win($('.dart', b) || b), reduced ? 0 : 170); $$('.choice', el).forEach(c => { if (c !== b) c.classList.add('fade'); }); setTimeout(() => { if (t !== run) return; closeAnswer(); resolve(o); }, window.PBQ_FAST ? 30 : 760); return; }
             ctx.oops(o.err || '', o.msg); b.classList.add('no'); b.setAttribute('aria-label', fr(o.t) + ' : réponse fausse'); shake(b);
           });
           $('.choices', el).appendChild(b);
@@ -795,6 +843,7 @@ function closeMission() {
 }
 $('#w-quit').addEventListener('click', () => {
   if (!active) return;
+  if (active.arcade) { closeMission(); return; }
   const sh = $('#sheet'); sh.innerHTML = '';
   const i = S.resume && S.resume.m === active.id ? S.resume.i : 0;
   sh.appendChild(h(`<div><h2>Quitter la mission ?</h2><p>${esc(fr(i > 0 ? `Ta progression est enregistrée : tu reprendras à l’exercice ${i + 1}/8.` : 'Tu reprendras la mission depuis le début.'))}</p></div>`));
@@ -802,6 +851,54 @@ $('#w-quit').addEventListener('click', () => {
   sh.appendChild(btn('Quitter', 'btn-2', closeMission));
   openSheet();
 });
+
+/* ───────── Rejouer une attraction rallumée (sans XP) ───────── */
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+async function playArcade(x, a) {
+  const J = window.J;
+  if (a.kind === 'train') {
+    const name = id => fr((a.items.find(i => String(i[0]) === String(id)) || [])[1] || id);
+    let start = shuffle(a.key); if (start.join() === a.key.join()) start = start.slice(1).concat(start[0]);
+    const B = J.order({ title: a.title, items: a.items, start, key: a.key });
+    x.app('arcade', B.el); x.todo('Pose les gares dans l’ordre du trajet.');
+    await x.wait({ 'order.change': () => {}, 'order.check': ({ order }) => {
+      const k = order.findIndex((id, i) => id !== a.key[i]); if (k < 0) { B.lock(); return true; }
+      return x.oops('', (a.why && a.why[k]) || `Gare ${k + 1} : « ${name(a.key[k])} ».`);
+    } });
+    return;
+  }
+  const lab = v => fr((a.options.find(o => String(o[0]) === String(v)) || [])[1] || '');
+  const B = J.tri({ title: a.title, intro: a.intro, options: a.options, rows: shuffle(a.rows), key: a.key, ev: 'arc' });
+  x.app('arcade', B.el); x.todo(a.kind === 'coaster' ? 'Envoie chaque wagon sur la bonne voie.' : 'Fais monter chaque carte dans la bonne nacelle.');
+  await x.wait({ 'arc.pick': () => {}, 'arc.check': ({ values }) => {
+    const bad = Object.keys(a.key).filter(k => String(values[k]) !== String(a.key[k]));
+    if (!bad.length) { B.lock(); return true; }
+    const r = a.rows.find(y => y.id === bad[0]) || {};
+    return x.oops('', (a.why && a.why[bad[0]]) || `« ${fr(r.t || '')} » va dans « ${lab(a.key[bad[0]])} ».`);
+  } });
+}
+async function runArcade(id) {
+  const a = ARC()[id]; if (!a || !M[id] || !window.J) return;
+  cancelRun();
+  const t = ++run;
+  active = { id, def: M[id], t, from: 0, arcade: true };
+  missionEl.classList.add('is-open'); missionEl.inert = false;
+  for (const k in views) views[k].inert = true; $('#tabbar').inert = true;
+  clearThread(); resetApps(); closeAnswer(); untarget(); setXP(S.xp);
+  showLayer('work');
+  $('#w-kicker').textContent = fr(`Attraction · Mission ${id}`); $('#w-name').textContent = fr(window.J.name(a.kind)); fitTitle();
+  setSteps(0, true); hintIdx = 0; X = makeCtx(M[id], t, -1, null); X.hints = []; updateHint();
+  try {
+    await playArcade(X, a);
+    const e = X.errors;
+    await X.ok(e ? `Attraction terminée, avec ${e} erreur${e > 1 ? 's' : ''}.` : 'Sans faute !');
+    const sh = $('#sheet'); sh.innerHTML = '';
+    sh.appendChild(h(`<div><h2>${esc(fr(window.J.name(a.kind)))}</h2><p>${esc(fr(e ? 'Encore un tour pour la faire sans erreur ?' : 'Tu peux la rejouer quand tu veux depuis la carte du parc.'))}</p></div>`));
+    sh.appendChild(btn('Rejouer', 'cta', () => { closeSheet(); runArcade(id); }));
+    sh.appendChild(btn('Retour au parc', 'btn-2', () => { closeSheet(); closeMission(); }));
+    openSheet();
+  } catch (err) { if (!(err instanceof Cancel)) console.error(err); }
+}
 
 /* Récompenses, fiches et suite */
 async function showRewards(def, t) {
@@ -812,6 +909,7 @@ async function showRewards(def, t) {
     if (r.badge && !S.badges.includes(r.badge)) S.badges.push(r.badge);
     if (r.objet && !S.objets.includes(r.objet)) S.objets.push(r.objet);
     if (def.fiches && !S.fiches.includes(def.id)) S.fiches.push(def.id);
+    S.newLit = def.id;
     store.save();
   }
   const el = $('#reward'); el.innerHTML = '';
@@ -824,6 +922,7 @@ async function showRewards(def, t) {
     <div class="rw-list">
       <div class="rw-item"><img src="img/${r.badge}.webp" alt=""><div><small>${first ? 'Nouveau badge' : 'Badge déjà obtenu'}</small><b>${esc(fr(r.badgeNom))}</b></div></div>
       <div class="rw-item obj-it"><img src="img/o-${r.objet}.webp" alt=""><div><small>${first ? 'Nouvel objet pour ton bureau' : 'Objet déjà obtenu'}</small><b>${esc(fr(D.objets[r.objet]))}</b></div></div>
+      ${ARC()[def.id] && window.J ? `<div class="rw-item attr-it"><i>${window.J.icon(ARC()[def.id].kind)}</i><div><small>${first ? 'Attraction rallumée sur la carte' : 'Attraction déjà rallumée'}</small><b>${esc(fr(window.J.name(ARC()[def.id].kind)))}</b></div></div>` : ''}
     </div>
     <p class="rw-prog">${esc(fr(`Module ${md} : ${doneIn(md) * 10} % terminé · ${S.xp} XP cumulés`))}</p>
     ${first ? '' : '<p class="rw-note">Mission rejouée : les récompenses n’ont pas été attribuées une deuxième fois.</p>'}
@@ -905,8 +1004,8 @@ function start() {
 }
 
 window.PBQ = {
-  start, announce, mission, M, S, D, fr, esc, h, eur, nfmt, dfr, norm, clone, $, $$, sleep: (ms) => sleep(ms, run), act, avatar, person, clip: '', prevOf, nextOf, modOf, xpOf, renderPark,
-  target, untarget, shake, hurry, toast, bubble, controle, projectBefore, project0, runMission, closeMission, store,
+  start, announce, mission, M, S, D, fr, esc, h, eur, nfmt, dfr, norm, clone, $, $$, sleep: (ms) => sleep(ms, run), act, probe, avatar, person, clip: '', prevOf, nextOf, modOf, xpOf, renderPark,
+  target, untarget, shake, hurry, toast, bubble, controle, projectBefore, project0, runMission, runArcade, closeMission, store,
   get run() { return run; }, get X() { return X; }, get active() { return active; },
   reset() { localStorage.removeItem(KEY); location.reload(); }
 };

@@ -168,7 +168,7 @@ const def = {
       await x.say('oscar', 'J’ai retrouvé les éléments nécessaires pour ces deux groupes.');
       await x.mail({ de: 'oscar', lbl: 'Pièce pédagogique du scénario', heure: '15:02', objet: 'CONF-M204-01 · Bon de confirmation', corps: ['M0899 : le bon BT-0899 correspond à une seule intervention. Le journal d’export confirme que son enregistrement a été émis deux fois consécutivement.', 'M0949 : les bons BT-0949 et BT-0950 correspondent à deux interventions distinctes. L’identifiant a été recopié sur la seconde ligne. La correction de la clé doit être traitée séparément.'], btn: 'Prendre les décisions' });
       await x.say('oscar', 'Pour M0899, nous conservons la première occurrence de l’export et retirons la copie. Pour M0949, nous gardons les deux interventions.');
-      const B = K2.sorter({ title: 'Décision par ligne', intro: 'Pièce utilisée : CONF-M204-01. Choisis le sort de chaque ligne.', btn: 'Valider les décisions',
+      const B = K2.sorter({ key: () => SOL, title: 'Décision par ligne', intro: 'Pièce utilisée : CONF-M204-01. Choisis le sort de chaque ligne.', btn: 'Valider les décisions',
         options: [['keep', 'Conserver'], ['drop', 'Retirer']],
         rows: [['906', 'M0899 · première occurrence'], ['907', 'M0899 · copie émise une seconde fois'], ['956', 'M0949 · BT-0949'], ['957', 'M0949 · BT-0950, clé recopiée']].map(r => ({ id: r[0], t: `Ligne_Source ${r[0]}`, sub: r[1] })) });
       x.app('dec204', B.el);

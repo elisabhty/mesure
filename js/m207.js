@@ -48,7 +48,7 @@ const def = {
     await x.pixel('Une normalisation peut rendre une valeur plus cohérente. Elle ne doit pas décider qu’une intervention est terminée.');
     await x.say('oscar', 'Même si sa date est ancienne ?');
     await x.pixel('Oui. Une date passée ne prouve pas l’exécution : l’intervention a pu être reportée, ou le statut mis à jour en retard. À toi de classer quatre changements.');
-    const B = K2.sorter({ bare: true, title: 'Quel geste ?', btn: 'Vérifier', options: [['net', 'Nettoyage'], ['nom', 'Nomenclature'], ['fait', 'Fait métier']],
+    const B = K2.sorter({ key: () => SOL, bare: true, title: 'Quel geste ?', btn: 'Vérifier', options: [['net', 'Nettoyage'], ['nom', 'Nomenclature'], ['fait', 'Fait métier']],
       rows: [['a', '« Wonder Wheel  » → « Wonder Wheel »', 'Espace final retiré'], ['b', '« terminee » → « Terminée »', 'Écriture officielle du statut'], ['c', '« Planifiée » → « Terminée »', 'La date est passée'], ['d', '« dragon » → « Dragon »', 'Libellé du référentiel']].map(r => ({ id: r[0], t: r[1], sub: r[2] })) });
     const sec = $('[data-sec="2"]', card); sec.appendChild(B.el); sec.style.display = '';
     requestAnimationFrame(() => sc.scrollTo({ top: Math.max(0, sec.offsetTop - 14), behavior: 'smooth' }));

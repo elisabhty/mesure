@@ -354,13 +354,13 @@ const def = {
       K.ready(x, 'page_001');
       await x.say('lola', 'Je veux comparer les attractions, suivre leur fréquentation jour après jour, et comprendre comment elles composent chaque journée.');
       await x.say('lola', 'Quel type de graphique pour chacune de ces questions ?');
-      const B = K.matching({
-        title: 'Laboratoire · Choix des visualisations', intro: 'Relie chaque question de Lola au visuel le plus adapté.', placeholder: 'Choisir un visuel', btn: 'Présenter mes choix', plain: true,
+      const B = K.matching({ key: () => W,
+        title: 'Laboratoire · Choix des visualisations', intro: 'Chaque question de Lola monte dans la nacelle du visuel le plus adapté.', placeholder: 'Choisir un visuel', btn: 'Présenter mes choix', plain: true,
         options: [['card', 'Carte'], ['table', 'Tableau'], ['bar', 'Barres horizontales'], ['column', 'Colonnes simples'], ['stacked', 'Colonnes empilées'], ['stacked100', 'Colonnes empilées 100 %'], ['pie', 'Secteurs']],
         rows: [{ id: 'q1', label: 'Classer les attractions par nombre de passages' }, { id: 'q2', label: 'Comparer les passages des cinq journées successives' }, { id: 'q3', label: 'Observer le total quotidien et sa composition par attraction' }]
       });
       x.app('choix', B.el);
-      x.todo('Relie chacune des trois questions à un visuel.');
+      x.todo('Fais monter chaque question dans la nacelle de son visuel.');
       const W = { q1: 'bar', q2: 'column', q3: 'stacked' };
       const ERR = {
         q1: { card: 'Carte pour comparer quatre attractions', table: 'Tableau pour la demande de classement visuel' },
@@ -376,7 +376,7 @@ const def = {
         'match.pick': () => {},
         'match.check': ({ values }) => {
           const ks = Object.keys(W);
-          if (ks.some(k => !values[k])) return x.oops('', 'Relie un visuel à chaque question.');
+          if (ks.some(k => !values[k])) return x.oops('', 'Choisis un visuel pour chaque question.');
           const bad = ks.filter(k => values[k] !== W[k]);
           B.mark(ks.filter(k => !bad.includes(k)), bad);
           if (!bad.length) { B.lock(); return true; }
@@ -834,19 +834,19 @@ const def = {
       }));
       x.guide();
       await x.ok('18, 14, 10 et 8. Nombre comptait les cinq lignes quotidiennes de chaque attraction ; Somme additionne leurs passages.');
-      const B = K.matching({
-        title: 'Quatre chiffres, quatre significations', intro: 'Relie chaque indicateur du rapport à sa valeur.', placeholder: 'Choisir', btn: 'Vérifier', plain: true,
+      const B = K.matching({ key: () => W,
+        title: 'Quatre chiffres, quatre significations', intro: 'Chaque indicateur du rapport monte dans la nacelle de sa valeur.', placeholder: 'Choisir', btn: 'Vérifier', plain: true,
         options: [['20', '20'], ['27', '27'], ['40', '40'], ['50', '50']],
         rows: [{ id: 'lv', label: 'Lignes de vente', sub: 'Enregistrements commerciaux' }, { id: 'bv', label: 'Billets vendus', sub: 'Somme des quantités vendues' }, { id: 'ee', label: 'Entrées enregistrées', sub: 'Premières admissions validées' }, { id: 'pa', label: 'Passages dans les attractions', sub: 'Somme des utilisations d’attractions' }]
       });
       x.app('quatre', B.el);
-      x.todo('Relie chaque indicateur à sa valeur.');
+      x.todo('Fais monter chaque indicateur dans la nacelle de sa valeur.');
       const W = { lv: '20', bv: '40', ee: '27', pa: '50' };
       await x.wait({
         'match.pick': () => {},
         'match.check': ({ values }) => {
           const ks = Object.keys(W);
-          if (ks.some(k => !values[k])) return x.oops('', 'Relie une valeur à chaque indicateur.');
+          if (ks.some(k => !values[k])) return x.oops('', 'Choisis une valeur pour chaque indicateur.');
           const bad = ks.filter(k => values[k] !== W[k]);
           B.mark(ks.filter(k => !bad.includes(k)), bad);
           if (!bad.length) { B.lock(); return true; }

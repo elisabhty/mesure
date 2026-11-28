@@ -226,7 +226,7 @@ const def = {
         tries: p => p.kind === 'add' ? x.oops(p.op === 'filter' ? 'Filtre appliqué' : '', 'Aujourd’hui, on observe : ferme le filtre sans le valider.') : undefined
       });
       await x.ok('Le bas du fichier apparaît : TOTAL PROVISOIRE et FIN EXPORT. Sans Charger plus, ils restaient invisibles.');
-      const B = K2.sorter({ title: 'Que contient chaque ligne ?', intro: 'Classe ces six lignes du fichier reçu.', btn: 'Vérifier mon classement',
+      const B = K2.sorter({ key: () => SOL, title: 'Que contient chaque ligne ?', intro: 'Classe ces six lignes du fichier reçu.', btn: 'Vérifier mon classement',
         options: [['ctx', 'Contexte'], ['hdr', 'En-têtes'], ['int', 'Donnée'], ['par', 'Parasite']],
         rows: [{ id: 'l1', t: 'WONDERLAND — extrait maintenance mai 2026', sub: 'Ligne 1' }, { id: 'l5', t: '(ligne vide)', sub: 'Ligne 5' }, { id: 'l6', t: 'ID_Intervention · Attraction · Date_Demande…', sub: 'Ligne 6' },
           { id: 'l7', t: 'M0001 · Pirates · 02/05/2026…', sub: 'Ligne 7' }, { id: 'l507', t: 'COMMENTAIRE ATELIER', sub: 'Ligne 507' }, { id: 'l1108', t: 'TOTAL PROVISOIRE', sub: 'Ligne 1108' }] });
@@ -296,7 +296,7 @@ const def = {
       const pbi = x.pbi;
       await x.say('victoria', 'Je veux une liste claire : ce qui est faux à coup sûr, et ce qu’il faudra vérifier avec les équipes.');
       await x.pixel('Voici le registre des anomalies. Pour chacune : est-elle prouvée par le fichier seul, ou faut-il enquêter ?');
-      const B = K2.sorter({ title: 'Registre des anomalies', intro: 'Douze constats relevés dans l’export. Classe chacun.', btn: 'Vérifier le registre',
+      const B = K2.sorter({ key: () => Object.fromEntries(K2.REG.map(r => [r.id, r.cert ? 'cert' : 'inv'])), title: 'Registre des anomalies', intro: 'Douze constats relevés dans l’export. Classe chacun.', btn: 'Vérifier le registre',
         options: [['cert', 'Anomalie certaine'], ['inv', 'À investiguer']],
         rows: K2.REG.map(r => ({ id: r.id, t: r.t, sub: r.ids.length ? r.ids.join(', ') : r.c })) });
       x.app('reg201', B.el);
@@ -312,7 +312,7 @@ const def = {
       EX7(pbi.P);
       await x.ok('Sept anomalies certaines, cinq cas à investiguer. Le registre est enregistré dans le projet.');
       await x.pixel('Dernière chose : dans quel ordre attaquer le nettoyage, pour qu’il soit reproductible ?');
-      const O = K.ordering({ title: 'Stratégie de nettoyage', intro: 'Glisse les étapes dans l’ordre.', btn: 'Valider la stratégie', start: ['str', 'cor', 'iso', 'dia'],
+      const O = K.ordering({ key: ['iso', 'str', 'dia', 'cor'], title: 'Stratégie de nettoyage', intro: 'Pose les étapes dans l’ordre du trajet.', btn: 'Valider la stratégie', start: ['str', 'cor', 'iso', 'dia'],
         items: [['iso', 'Isoler la préparation, sans la charger'], ['str', 'Retrouver la structure : en-têtes et lignes parasites'], ['dia', 'Diagnostiquer chaque colonne, sans corriger'], ['cor', 'Corriger seulement avec une règle ou une preuve']] });
       x.app('ordre201', O.el);
       x.todo('Ordonne les quatre étapes de la stratégie.');
