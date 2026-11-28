@@ -438,7 +438,7 @@ rect.is-target{animation:ringsvg 1.2s ease-in-out infinite !important; stroke:va
 .lc-h{font-size:21px; font-weight:700; letter-spacing:-.02em; margin:2px 0 12px; line-height:1.15}
 .flow{display:grid; gap:8px}
 .flow-row{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
-.flow-box{border:1.5px solid var(--ligne); border-radius:16px; padding:10px 12px; opacity:.25; transform:translateY(6px); transition:opacity .5s ease, transform .5s var(--ease), border-color .4s}
+.flow-box{border:1.5px solid var(--ligne); border-radius:16px; padding:10px 12px; text-align:center; text-wrap:balance; opacity:.25; transform:translateY(6px); transition:opacity .5s ease, transform .5s var(--ease), border-color .4s}
 .flow-box.on{opacity:1; transform:none}
 .flow-box.hot{border-color:var(--or); background:var(--or-3)}
 .flow-box b{display:block; font-size:14.5px; font-weight:650}
